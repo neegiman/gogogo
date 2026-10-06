@@ -1,4 +1,12 @@
 export type Difficulty = 12 | 16 | 20 | 24;
+export const DEFAULT_DIFFICULTY: Difficulty = 12;
+export const MAX_HINTS = 3;
+export type ChallengeNotice = {
+  id: number;
+  kind: 'success' | 'retry';
+  title: string;
+  message: string;
+};
 export type PuzzlePiece = {
   id: string;
   row: number;

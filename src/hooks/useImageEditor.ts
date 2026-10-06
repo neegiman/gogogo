@@ -8,6 +8,8 @@ export function useImageEditor(image: HTMLCanvasElement) {
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const frame = useRef(0);
   const [zoom, setZoom] = useState(1);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState('');
   function constrain() {
     const v = view.current;
     const rotated = v.angle % 180 !== 0;
@@ -21,7 +23,7 @@ export function useImageEditor(image: HTMLCanvasElement) {
   }
   const renderTo = useCallback((canvas: HTMLCanvasElement, size: number) => {
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) throw new Error('사진을 자를 준비가 안 됐어요. 잠시 후 다시 눌러 주세요.');
     const v = view.current;
     const scale = size / Math.min(image.width, image.height) * v.zoom;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -40,12 +42,14 @@ export function useImageEditor(image: HTMLCanvasElement) {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const size = Math.round(canvas.getBoundingClientRect().width * Math.min(window.devicePixelRatio || 1, 3));
-      if (canvas.width !== size) { canvas.width = size; canvas.height = size; }
-      renderTo(canvas, size);
+      if (size < 1) return;
+      if (canvas.width !== size || canvas.height !== size) { canvas.width = size; canvas.height = size; }
+      try { renderTo(canvas, size); setReady(true); setError(''); }
+      catch { setReady(false); setError('사진을 표시하지 못했어요. 다른 사진을 골라 주세요.'); }
     });
   }, [renderTo]);
   useEffect(() => {
-    view.current = { ...initial }; setZoom(1); draw();
+    view.current = { ...initial }; pointers.current.clear(); setZoom(1); setReady(false); setError(''); draw();
     const observer = new ResizeObserver(draw);
     if (canvasRef.current) observer.observe(canvasRef.current);
     return () => { observer.disconnect(); cancelAnimationFrame(frame.current); frame.current = 0; };
@@ -89,6 +93,11 @@ export function useImageEditor(image: HTMLCanvasElement) {
   }
   function rotate() { pointers.current.clear(); view.current = { ...initial, angle: (view.current.angle + 90) % 360 }; setZoom(1); draw(); }
   function reset() { pointers.current.clear(); view.current = { ...initial }; setZoom(1); draw(); }
-  function crop() { const output = document.createElement('canvas'); output.width = output.height = 1024; renderTo(output, 1024); return output; }
-  return { canvasRef, zoom, changeZoom, rotate, reset, crop, pointerDown, pointerMove, pointerEnd };
+  function crop() {
+    if (!ready) throw new Error('사진을 준비하고 있어요. 잠시 후 다시 눌러 주세요.');
+    pointers.current.clear();
+    const output = document.createElement('canvas'); output.width = output.height = 1024;
+    renderTo(output, 1024); return output;
+  }
+  return { canvasRef, zoom, ready, error, changeZoom, rotate, reset, crop, pointerDown, pointerMove, pointerEnd };
 }

@@ -10,6 +10,11 @@
 .current .play-step-number { background: var(--primary); color: white; }
 .editor-page > .play-steps { margin-top: 0; margin-bottom: 25px; }
 .editor-difficulty { margin: 20px 0; padding-top: 20px; border-top: 1px solid var(--line); }
+.editor-selection { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 0 14px; color: var(--primary); font-size: 14px; }
+.editor-selection span { font-size: 12px; color: var(--muted); }
+.crop-grid { width: 100%; height: 100%; background: none; }
+.crop-grid line { stroke: #ffffffa0; stroke-width: .35; }
+.difficulty-card.selected { box-shadow: 0 0 0 2px #d461941c; }
 .game-title small { display: block; margin-bottom: 4px; font-size: 10px; font-weight: 500; color: var(--muted); }
 .tray-area { min-width: 0; }
 .tray-slot[hidden] { display: none; }
@@ -115,6 +120,27 @@
 .puzzle-toolbar .challenge-button { min-height: 56px; width: 100%; font-size: 17px; }
 .challenge-button:disabled { background: #f1dae5; color: #987186; opacity: 1; box-shadow: none; }
 .challenge-help { color: var(--muted); font-size: 10px; text-align: center; }
+.hint-count { font-size: 12px; white-space: nowrap; }
+.original-preview { width: min(92vw, 480px); max-height: calc(100svh - 24px); overflow: auto; padding: 22px; border: 1px solid var(--line); border-radius: 24px; text-align: center; background: var(--surface-soft); color: var(--ink); }
+.original-preview::backdrop { background: #49253770; }
+.original-preview h2 { display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 16px; font-size: 22px; }
+.original-preview .original-guide { position: static; display: block; width: 100%; height: auto; aspect-ratio: 1; opacity: 1; border-radius: 14px; }
+.original-preview p { margin: 14px 0; font-size: 13px; color: var(--muted); }
+.original-preview .button { width: 100%; min-height: 52px; }
+.challenge-feedback-layer { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: #fff6fa50; pointer-events: none; }
+.challenge-feedback { width: min(100%, 420px); padding: 32px 22px; border: 2px solid #efb5ce; border-radius: 30px; background: #fff9fc; color: var(--primary); text-align: center; box-shadow: 0 18px 70px #6d294740; animation: challenge-notice 2s ease both; }
+.challenge-feedback h2 { font-size: clamp(32px, 8vw, 46px); margin: 12px 0; letter-spacing: -1.5px; }
+.challenge-feedback p { font-size: 15px; color: var(--muted); line-height: 1.7; }
+.challenge-feedback.success > svg { color: #bc9438; }
+.completion-summary { width: min(100%, 440px); margin: 28px auto; padding: 24px; border: 1px solid var(--line); border-radius: 26px; background: var(--surface-soft); text-align: center; box-shadow: 0 12px 40px #702c4a0a; }
+.completion-summary h2 { font-size: 22px; letter-spacing: -.6px; }
+.completion-summary > p { font-size: 13px; color: var(--muted); margin: 12px 0; line-height: 1.7; }
+.completion-summary .save-message { font-size: 11px; margin-bottom: 20px; }
+.completion-summary > .button { width: 100%; margin-bottom: 10px; }
+.completion-summary > .text-button { margin-top: 2px; }
+.game-page.completed .puzzle-board, .game-page.completed .puzzle-toolbar { position: relative; top: auto; bottom: auto; z-index: auto; }
+@keyframes challenge-notice { 0% { opacity: 0; transform: scale(.92); } 12%, 85% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .challenge-feedback { animation: none; } }
 @media (max-width: 600px) {
   .puzzle-toolbar { padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   .toolbar-guides .button { min-height: 44px; font-size: 13px; }
@@ -128,4 +154,5 @@
   .board-instructions { grid-column: 1; grid-row: 7; margin: 0; }
   .puzzle-toolbar .challenge-button { min-height: 48px; }
   .toolbar-guides .button { min-height: 44px; }
+  .completion-summary { grid-column: 1 / -1; }
 }

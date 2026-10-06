@@ -8,13 +8,22 @@ async function prepare(page: Page, count = 12) {
   await page.locator('.difficulty-card').filter({ hasText: `${count}개` }).click();
   await page.getByRole('button', { name: '붙이러 고고고!' }).click();
   await expect(page.locator('.puzzle-piece')).toHaveCount(count);
+  const compact = await page.evaluate(() => matchMedia('(max-width: 600px), (max-height: 520px)').matches);
+  await expect(page.locator('.tray-area')).toHaveAttribute('data-paged', String(compact));
 }
 async function revealPiece(page: Page, id: string) {
   const piece=page.locator(`[data-piece-id="${id}"]`);
+  await expect(piece).toHaveCount(1);
   if(await piece.isVisible()) return;
-  const previous=page.getByRole('button',{name:'이전 조각'});
-  while(await previous.isEnabled()) await previous.click();
-  for(let i=0;i<4 && !(await piece.isVisible());i++) await page.getByRole('button',{name:'다음 조각'}).click();
+  const index=await piece.evaluate(node=>Array.from(node.closest('.piece-tray')!.children).indexOf(node.parentElement!));
+  const targetPage=Math.floor(index/6)+1;
+  for(let i=0;i<8 && !(await piece.isVisible());i++) {
+    const current=Number(await page.locator('.tray-page-count strong').innerText());
+    if(current===targetPage) break;
+    const button=page.getByRole('button',{name:current>targetPage?'이전 조각':'다음 조각'});
+    try { await button.click({timeout:1500}); }
+    catch(error) { if(await button.isEnabled()) throw error; }
+  }
   await expect(piece).toBeVisible();
 }
 async function tapPlace(page: Page, id: string, targetId=id) {
@@ -26,6 +35,7 @@ async function tapPlace(page: Page, id: string, targetId=id) {
     await page.locator(`[data-piece-id="${id}"]`).click();
     await page.locator(`[data-target-id="${targetId}"]`).click();
   }
+  await expect(page.locator(`[data-target-id="${targetId}"]`)).toHaveAttribute('data-placed-piece-id',id);
 }
 async function returnPlaced(page: Page, cellId: string) {
   const cell=page.locator(`[data-target-id="${cellId}"]`);
@@ -87,16 +97,22 @@ for(const count of [12,16,20,24]) test(`${count} pieces: free placement, whole-b
   const before=await page.locator('.board-cell').evaluateAll(nodes=>nodes.map(n=>({piece:n.getAttribute('data-placed-piece-id'),className:n.className,disabled:(n as HTMLButtonElement).disabled})));
   await page.getByRole('button',{name:'도전!',exact:true}).click();
   await expect(page.getByText('조각을 살펴보고 다시 도전해요!',{exact:true})).toBeVisible();
+  await expect(page.locator('.challenge-feedback')).toHaveCount(1);
+  const notice = (await page.locator('.challenge-feedback').boundingBox())!, viewport = page.viewportSize()!;
+  expect(notice.x + notice.width / 2).toBeCloseTo(viewport.width / 2, 0);
+  expect(notice.y + notice.height / 2).toBeCloseTo(viewport.height / 2, 0);
   expect(await page.locator('.board-cell').evaluateAll(nodes=>nodes.map(n=>({piece:n.getAttribute('data-placed-piece-id'),className:n.className,disabled:(n as HTMLButtonElement).disabled})))).toEqual(before);
   await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toHaveCount(0);
   expect(await page.evaluate(()=>(window as Window & {puzzleSounds:string[]}).puzzleSounds)).toEqual([]);
+  await expect(page.locator('.challenge-feedback-layer')).toHaveCount(0);
   await page.getByRole('button',{name:'다시 도전!',exact:true}).click();
+  await expect(page.locator('.challenge-feedback')).toHaveCount(1);
+  await expect(page.locator('.challenge-feedback-layer')).toHaveCount(0);
   await expect(page.locator('.board-cell:disabled')).toHaveCount(0);
-  await page.getByRole('button',{name:'원본 보기'}).click();await expect(page.locator('.original-guide')).toBeVisible();
-  await page.getByRole('button',{name:'원본 보기'}).click();await expect(page.locator('.original-guide')).toHaveCount(0);
-  await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.original-guide')).toBeVisible();
-  await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.hint-piece')).toHaveCount(1);
-  await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.original-guide')).toBeVisible();
+  // Original remains visible even when every cell has an opaque photo piece.
+  await page.getByRole('button',{name:'원본 보기'}).click();await expect(page.getByRole('dialog',{name:'원본 사진'})).toBeVisible();
+  await expect(page.locator('.original-guide')).toHaveCSS('opacity','1');
+  await page.getByRole('button',{name:'닫고 이어하기'}).click();await expect(page.locator('.original-guide')).toHaveCount(0);
   // Double click/tap returns even a correct piece, not only incorrect pieces.
   await returnPlaced(page,pieces[2]);await expect(page.locator(`[data-piece-id="${pieces[2]}"]`)).toBeVisible();
   await tapPlace(page,pieces[2]);
@@ -107,8 +123,12 @@ for(const count of [12,16,20,24]) test(`${count} pieces: free placement, whole-b
   await page.screenshot({path:`test-results/playing-${count}-${info.project.name}.png`,fullPage:true});
   await page.getByRole('button',{name:'다시 도전!',exact:true}).click();
   await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toBeVisible();
+  await expect(page.locator('.challenge-feedback')).toHaveCount(1);
+  await expect(page.locator('.challenge-feedback-layer')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'나의 완성 기록'})).toBeVisible();
   await expect(page.getByText('이 기기에 기록을 저장했어요.')).toBeVisible();
-  await expect(page.getByText('힌트 3번',{exact:true})).toBeVisible();
+  await expect(page.getByText('힌트 0번',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>(window as Window & {puzzleSounds:string[]}).puzzleSounds.length)).toBe(1);
   await page.screenshot({path:`test-results/complete-${count}-${info.project.name}.png`});
   await page.getByRole('link',{name:'기록 보기',exact:true}).click();
@@ -131,6 +151,97 @@ test('keyboard selection, free placement and return work without dragging',async
   await page.keyboard.press('Delete');
   await expect(target).not.toHaveAttribute('data-placed-piece-id',id);
   await expect(page.locator(`[data-piece-id="${id}"]`)).toBeVisible();
+});
+
+test('local photos crop and start with 12 selected without touching difficulty', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  for (const [width, height, viewport] of [[800, 1100, 320], [1400, 900, 375], [4000, 3000, 430]]) {
+    await page.setViewportSize({ width: viewport, height: 844 }); await page.goto(root);
+    await expect(page.locator('.difficulty-card[aria-pressed="true"]')).toContainText('12');
+    const buffer = Buffer.from(await page.evaluate(({ width, height }) => {
+      const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d')!; ctx.fillStyle = '#e090b4'; ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = '#894f72'; ctx.fillRect(width / 4, height / 3, width / 2, height / 3);
+      return canvas.toDataURL('image/jpeg').split(',')[1];
+    }, { width, height }), 'base64');
+    await page.getByLabel('기기 사진 선택').setInputFiles({ name: 'my-photo.jpg', mimeType: 'image/jpeg', buffer });
+    await expect(page.getByText('12개 선택됨')).toBeVisible();
+    await expect(page.locator('.difficulty-card[aria-pressed="true"]')).toContainText('12');
+    await expect(page.locator('.difficulty-check')).toHaveCount(1);
+    await expect(page.locator('.crop-grid line')).toHaveCount(5);
+    const start = page.getByRole('button', { name: '붙이러 고고고!' }); await expect(start).toBeEnabled();
+    await page.getByRole('button', { name: '90° 회전' }).click();
+    await page.getByRole('button', { name: '사진 확대', exact: true }).click();
+    await start.click();
+    await expect(page.locator('.board-cell')).toHaveCount(12);
+    await expect(page.locator('.puzzle-piece')).toHaveCount(12);
+    await expect(page.getByRole('heading', { name: '어떤 사진으로 놀까요?' })).toHaveCount(0);
+    expect(await page.locator('.puzzle-piece canvas').first().evaluate((canvas: HTMLCanvasElement) => canvas.getContext('2d')!.getImageData(1, 1, 1, 1).data[3])).toBe(255);
+  }
+  expect(errors).toEqual([]);
+});
+
+test('a crop failure is explained and the start button can be retried', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto(root); await page.getByRole('button', { name: '샘플 퍼즐 해보기' }).click();
+  await expect(page.getByRole('button', { name: '붙이러 고고고!' })).toBeEnabled();
+  await page.evaluate(() => {
+    let fail = true;
+    HTMLCanvasElement.prototype.getContext = new Proxy(HTMLCanvasElement.prototype.getContext, {
+      apply(target, canvas: HTMLCanvasElement, args) {
+        if (fail && !canvas.isConnected && canvas.width === 1024 && canvas.height === 1024) { fail = false; return null; }
+        return Reflect.apply(target, canvas, args);
+      },
+    });
+  });
+  await page.getByRole('button', { name: '붙이러 고고고!' }).click();
+  await expect(page.locator('.editor-card .error-notice')).toContainText('잠시 후 다시');
+  await expect(page.getByRole('button', { name: '붙이러 고고고!' })).toBeEnabled();
+  await page.getByRole('button', { name: '붙이러 고고고!' }).click();
+  await expect(page.locator('.board-cell')).toHaveCount(12); expect(errors).toEqual([]);
+});
+
+test('hints swap incorrect full boards at all difficulties, stop after three and reset on replay', async ({ page }) => {
+  test.setTimeout(90000);
+  for (const count of [12, 16, 20, 24]) {
+    await prepare(page, count);
+    const ids = await page.locator('.puzzle-piece').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-piece-id')!));
+    for (let i = 0; i < ids.length; i++) await tapPlace(page, ids[(i + 1) % ids.length], ids[i]);
+    for (let used = 0; used < 3; used++) {
+      const before = await page.locator('.board-cell').evaluateAll(nodes => nodes.map(node => ({ cell: node.getAttribute('data-target-id')!, piece: node.getAttribute('data-placed-piece-id')! })));
+      const candidate = before.find(item => item.cell !== item.piece)!.cell;
+      await page.getByRole('button', { name: `힌트 ${3 - used}번 남음` }).click();
+      await expect(page.locator(`[data-target-id="${candidate}"]`)).toHaveAttribute('data-placed-piece-id', candidate);
+      const after = await page.locator('.board-cell').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-placed-piece-id')!));
+      expect(new Set(after).size).toBe(count);
+      for (const item of before.filter(item => item.cell === item.piece)) await expect(page.locator(`[data-target-id="${item.cell}"]`)).toHaveAttribute('data-placed-piece-id', item.piece);
+      await expect(page.getByRole('heading', { name: '퍼즐 완성!' })).toHaveCount(0);
+    }
+    await expect(page.getByRole('button', { name: '힌트 0번 남음' })).toBeDisabled();
+    const cells = await page.locator('.board-cell').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-target-id')!));
+    for (const cell of cells) await returnPlaced(page, cell);
+    for (const id of ids) await tapPlace(page, id);
+    await page.getByRole('button', { name: '도전!', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '퍼즐 완성!' })).toBeVisible();
+    await expect(page.getByText('힌트 3번', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '다시 하기' }).click();
+    await expect(page.getByRole('button', { name: '힌트 3번 남음' })).toBeEnabled();
+    await expect(page.locator('.board-cell.occupied')).toHaveCount(0);
+  }
+});
+
+test('hints place missing pieces but never finish automatically or grant a fourth hint', async ({ page }) => {
+  await prepare(page);
+  for (let used = 0; used < 3; used++) {
+    await page.getByRole('button', { name: `힌트 ${3 - used}번 남음` }).click();
+    await expect(page.locator(`[data-target-id="piece-${used}"]`)).toHaveAttribute('data-placed-piece-id', `piece-${used}`);
+  }
+  await expect(page.locator('.board-cell.occupied')).toHaveCount(3);
+  await expect(page.getByRole('button', { name: '힌트 0번 남음' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '도전!', exact: true })).toBeDisabled();
+  await returnPlaced(page, 'piece-2');
+  await expect(page.locator('.board-cell.occupied')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: '힌트 0번 남음' })).toBeDisabled();
 });
 test('local photo processing, crop, rotation, cancel and reload recovery',async({page})=>{
   await page.goto(root);
@@ -256,7 +367,7 @@ test('IndexedDB failure preserves a cheerful completed puzzle',async({page})=>{
   await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toBeVisible();
   await expect(page.getByText('퍼즐은 완성했어요!',{exact:false})).toBeVisible();
 });
-test('phone tray paging, hint navigation and reachable editor actions',async({page},info)=>{
+test('phone tray paging, automatic advancement and reachable editor actions',async({page},info)=>{
   test.skip(info.project.name!=='touch','Phone layout checks');
   for(const width of [320,375,390,430]) {
     await page.setViewportSize({width,height:844});await page.goto(root);
@@ -274,8 +385,8 @@ test('phone tray paging, hint navigation and reachable editor actions',async({pa
   expect((await page.locator('.puzzle-piece:visible').first().boundingBox())!.width).toBeGreaterThan(75);
   await page.getByRole('button',{name:'다음 조각'}).tap();await page.getByRole('button',{name:'다음 조각'}).tap();await page.getByRole('button',{name:'다음 조각'}).tap();
   await expect(page.getByRole('button',{name:'다음 조각'})).toBeDisabled();
-  await page.getByRole('button',{name:'힌트',exact:true}).tap();await page.getByRole('button',{name:'힌트',exact:true}).tap();
-  await expect(page.locator('.hint-piece')).toBeVisible();await expect(page.locator('.tray-page-count')).toContainText('1');
+  await page.getByRole('button',{name:'이전 조각'}).tap();await page.getByRole('button',{name:'이전 조각'}).tap();await page.getByRole('button',{name:'이전 조각'}).tap();
+  await expect(page.locator('.tray-page-count')).toContainText('1');
   const ids=await page.locator('.puzzle-piece:visible').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
   for(const id of ids) await tapPlace(page,id);
   await expect(page.locator('.board-cell.occupied')).toHaveCount(6);await expect(page.locator('.tray-page-count')).toContainText('2');

@@ -26,3 +26,16 @@ export function returnPiece(placements: PiecePlacements, pieceId: string): Piece
 export function isPuzzleComplete(pieces: PuzzlePiece[], placements: PiecePlacements): boolean {
   return Object.keys(placements).length === pieces.length && pieces.every(piece => placements[piece.id] === piece.id);
 }
+export function applyHint(pieces: PuzzlePiece[], placements: PiecePlacements): { placements: PiecePlacements; pieceId: string } | null {
+  const piece = pieces.find(piece => placements[piece.id] !== piece.id);
+  if (!piece) return null;
+  const previousCell = Object.keys(placements).find(cellId => placements[cellId] === piece.id);
+  const displaced = placements[piece.id];
+  const next = returnPiece(placements, piece.id);
+  delete next[piece.id];
+  // Swap a displaced piece into the vacated cell, or return it to the tray.
+  // Already-correct pieces are never displaced and piece IDs stay unique.
+  if (displaced && previousCell) next[previousCell] = displaced;
+  next[piece.id] = piece.id;
+  return { placements: next, pieceId: piece.id };
+}

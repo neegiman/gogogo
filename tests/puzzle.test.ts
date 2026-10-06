@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createPieces, shufflePieces, placePiece, returnPiece, isPuzzleComplete } from '../src/lib/puzzle';
+import { createPieces, shufflePieces, placePiece, returnPiece, isPuzzleComplete, applyHint } from '../src/lib/puzzle';
 import { calculateStars } from '../src/lib/scoring';
 import { DIFFICULTIES } from '../src/types/puzzle';
 for(const difficulty of DIFFICULTIES) {
@@ -44,4 +44,32 @@ test('a full but incorrect attempt can be edited and checked again',()=>{
 test('every completion earns stars, with generous hints and no time penalty',()=>{
   assert.equal(calculateStars(0,12),3);assert.equal(calculateStars(3,12),3);
   assert.equal(calculateStars(12,12),2);assert.equal(calculateStars(100,12),1);
+});
+
+test('hints place a missing piece without losing a displaced tray piece', () => {
+  const pieces = createPieces(12), initial = { 'piece-0': 'piece-5', 'piece-8': 'piece-8' };
+  const result = applyHint(pieces, initial)!;
+  assert.equal(result.pieceId, 'piece-0');
+  assert.deepEqual(result.placements, { 'piece-0': 'piece-0', 'piece-8': 'piece-8' });
+  assert.deepEqual(initial, { 'piece-0': 'piece-5', 'piece-8': 'piece-8' });
+});
+
+test('hints swap incorrect placed pieces and preserve all IDs at every difficulty', () => {
+  for (const { count } of DIFFICULTIES) {
+    const pieces = createPieces(count);
+    const rotated = Object.fromEntries(pieces.map((piece, i) => [piece.id, pieces[(i + 1) % count].id]));
+    let placements = rotated;
+    for (let i = 0; i < 3; i++) {
+      const result = applyHint(pieces, placements)!;
+      assert.equal(result.placements[result.pieceId], result.pieceId);
+      for (const [cell, id] of Object.entries(placements)) {
+        if (cell === id) assert.equal(result.placements[cell], id);
+      }
+      assert.equal(Object.keys(result.placements).length, count);
+      assert.equal(new Set(Object.values(result.placements)).size, count);
+      placements = result.placements;
+    }
+    const correct = Object.fromEntries(pieces.map(piece => [piece.id, piece.id]));
+    assert.equal(applyHint(pieces, correct), null);
+  }
 });

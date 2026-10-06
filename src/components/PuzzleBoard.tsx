@@ -4,9 +4,9 @@ import type { PuzzlePiece as Piece, PiecePlacements } from '@/types/puzzle';
 import PuzzlePiece, { PieceCanvas } from './PuzzlePiece';
 import Icon from './Icon';
 
-export default function PuzzleBoard({ image, pieces, order, placements, completed, guide, highlightPiece, onPlace, onReturn }: {
+export default function PuzzleBoard({ image, pieces, order, placements, completed, highlightPiece, onPlace, onReturn }: {
   image: HTMLCanvasElement; pieces: Piece[]; order: Piece[]; placements: PiecePlacements;
-  completed: boolean; guide: boolean; highlightPiece: string | null;
+  completed: boolean; highlightPiece: string | null;
   onPlace: (pieceId: string, cellId: string) => void; onReturn: (pieceId: string) => void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
@@ -28,7 +28,9 @@ export default function PuzzleBoard({ image, pieces, order, placements, complete
     return () => media.removeEventListener('change', update);
   }, []);
   useEffect(() => {
-    if (!compact || !highlightPiece || highlightIsPlaced) return;
+    if (!highlightPiece) return;
+    setSelected(null); lastTap.current = null;
+    if (!compact || highlightIsPlaced) return;
     const index = order.findIndex(piece => piece.id === highlightPiece);
     if (index >= 0) { setTrayPage(Math.floor(index / 6)); setSelected(null); lastTap.current = null; }
   }, [compact, highlightPiece, order, highlightIsPlaced]);
@@ -73,7 +75,6 @@ export default function PuzzleBoard({ image, pieces, order, placements, complete
   }
   return <>
     <div className="puzzle-board" style={{ gridTemplateColumns: `repeat(${cols},1fr)`, gridTemplateRows: `repeat(${rows},1fr)` }} aria-label="퍼즐 맞추기판" aria-describedby="board-instructions">
-      {guide && <canvas className="original-guide" ref={canvas => { if (canvas) { canvas.width = image.width; canvas.height = image.height; canvas.getContext('2d')?.drawImage(image, 0, 0); } }} aria-hidden="true"/>}
       {pieces.map(cell => {
         const occupant = byId.get(placements[cell.id]);
         return <button type="button" key={cell.id}
