@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createPieces, shufflePieces, placePiece, returnPiece, isPuzzleComplete, applyHint } from '../src/lib/puzzle';
+import { createPieces, shufflePieces, placePiece, returnPiece, syncTray, isPuzzleComplete, applyHint } from '../src/lib/puzzle';
 import { calculateStars } from '../src/lib/scoring';
-import { DIFFICULTIES } from '../src/types/puzzle';
+import { DIFFICULTIES, type PieceTray } from '../src/types/puzzle';
 for(const difficulty of DIFFICULTIES) {
   test(`${difficulty.count} pieces tile the normalized image without gaps`,()=>{
     const pieces=createPieces(difficulty.count);
@@ -27,11 +27,49 @@ test('any empty cell accepts a piece without evaluating its correctness',()=>{
   assert.deepEqual(moved, { 'piece-3': 'piece-0' });
   assert.deepEqual(wrong, { 'piece-8': 'piece-0' });
 });
-test('occupied cells preserve both pieces until a piece is returned',()=>{
+test('occupied board cells exchange pieces without duplicates or loss',()=>{
   const occupied = { 'piece-8': 'piece-0', 'piece-3': 'piece-1' };
-  assert.equal(placePiece(occupied, 'piece-1', 'piece-8'), occupied);
+  assert.deepEqual(placePiece(occupied, 'piece-1', 'piece-8'), { 'piece-8': 'piece-1', 'piece-3': 'piece-0' });
+  assert.equal(placePiece(occupied, 'piece-0', 'piece-8'), occupied);
   assert.deepEqual(returnPiece(occupied, 'piece-0'), { 'piece-3': 'piece-1' });
   assert.deepEqual(occupied, { 'piece-8': 'piece-0', 'piece-3': 'piece-1' });
+});
+test('returns fill the first empty tray slots in return order and leave other pieces still', () => {
+  const pieces = createPieces(12), initial = pieces.map(piece => piece.id);
+  const placements = { 'piece-0': 'piece-11', 'piece-1': 'piece-1', 'piece-2': 'piece-8' };
+  let tray = syncTray(initial, pieces, placements);
+  assert.equal(tray[1], null); assert.equal(tray[8], null); assert.equal(tray[11], null);
+  tray = syncTray(tray, pieces, returnPiece(placements, 'piece-11'));
+  assert.equal(tray[1], 'piece-11'); assert.equal(tray[11], null);
+  tray = syncTray(tray, pieces, returnPiece(returnPiece(placements, 'piece-11'), 'piece-1'));
+  assert.equal(tray[8], 'piece-1'); assert.equal(tray[11], null);
+  assert.equal(tray[0], 'piece-0'); assert.equal(tray[9], 'piece-9');
+  assert.equal(syncTray(tray, pieces, returnPiece(returnPiece(placements, 'piece-11'), 'piece-1')), tray);
+});
+test('a tray piece replaces an occupied cell and the displaced piece returns to the first free slot', () => {
+  const pieces = createPieces(12), placements = { 'piece-3': 'piece-5', 'piece-8': 'piece-2' };
+  const tray = syncTray(pieces.map(piece => piece.id), pieces, placements);
+  const replaced = placePiece(placements, 'piece-10', 'piece-3');
+  assert.deepEqual(replaced, { 'piece-3': 'piece-10', 'piece-8': 'piece-2' });
+  const updated = syncTray(tray, pieces, replaced);
+  assert.equal(updated[2], 'piece-5'); assert.equal(updated[5], null); assert.equal(updated[10], null);
+});
+test('mixed placement, swapping, returning and hints preserve every piece at all difficulties', () => {
+  for (const { count } of DIFFICULTIES) {
+    const pieces = createPieces(count), ids = pieces.map(piece => piece.id);
+    let placements: Record<string, string> = {};
+    let tray: PieceTray = shufflePieces(ids, () => .9999);
+    for (let step = 0; step < count * 4; step++) {
+      const id = ids[(step * 7 + 3) % count];
+      if (step % 5 === 0) placements = returnPiece(placements, id);
+      else if (step % 7 === 0) placements = applyHint(pieces, placements)?.placements ?? placements;
+      else placements = placePiece(placements, id, ids[(step * 3 + 1) % count]);
+      tray = syncTray(tray, pieces, placements);
+      const all = [...Object.values(placements), ...tray.filter(id => id !== null)];
+      assert.equal(all.length, count); assert.equal(new Set(all).size, count);
+      assert.deepEqual([...all].sort(), [...ids].sort());
+    }
+  }
 });
 test('a full but incorrect attempt can be edited and checked again',()=>{
   const pieces = createPieces(12), correct = Object.fromEntries(pieces.map(piece => [piece.id, piece.id]));

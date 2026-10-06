@@ -1,15 +1,16 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createPieces, shufflePieces, placePiece, returnPiece, isPuzzleComplete, applyHint } from '@/lib/puzzle';
+import { createPieces, shufflePieces, placePiece, returnPiece, syncTray, isPuzzleComplete, applyHint } from '@/lib/puzzle';
 import { calculateStars } from '@/lib/scoring';
 import { saveRecord } from '@/lib/indexed-db';
 import { playSound, vibrate } from '@/lib/audio';
-import { MAX_HINTS, type Difficulty, type PiecePlacements, type ChallengeNotice } from '@/types/puzzle';
+import { MAX_HINTS, type Difficulty, type PiecePlacements, type PieceTray, type ChallengeNotice } from '@/types/puzzle';
 import type { PuzzleRecord } from '@/types/records';
 
 export function usePuzzle(difficulty: Difficulty, sound: boolean) {
   const [pieces] = useState(() => createPieces(difficulty));
-  const [order] = useState(() => shufflePieces(pieces));
+  const [tray, setTray] = useState<PieceTray>(() => shufflePieces(pieces).map(piece => piece.id));
+  const trayRef = useRef(tray);
   const placementsRef = useRef<PiecePlacements>({});
   const [placements, setPlacements] = useState<PiecePlacements>({});
   const started = useRef(0);
@@ -29,20 +30,27 @@ export function usePuzzle(difficulty: Difficulty, sound: boolean) {
     }, 500);
     return () => clearInterval(interval);
   }, []);
-  const place = useCallback((pieceId: string, cellId: string) => {
-    if (finished.current || !pieces.some(piece => piece.id === pieceId) || !pieces.some(piece => piece.id === cellId)) return;
-    const next = placePiece(placementsRef.current, pieceId, cellId);
-    if (next === placementsRef.current) return;
-    placementsRef.current = next;
-    setPlacements(next);
-    // Arranging never produces correctness feedback, sound or vibration.
+  const updatePlacements = useCallback((next: PiecePlacements) => {
+    const nextTray = syncTray(trayRef.current, pieces, next);
+    placementsRef.current = next; trayRef.current = nextTray;
+    setPlacements(next); setTray(nextTray);
+    return nextTray;
   }, [pieces]);
-  const remove = useCallback((pieceId: string) => {
-    if (finished.current || !Object.values(placementsRef.current).includes(pieceId)) return;
+  const place = useCallback((pieceId: string, cellId: string): number | null => {
+    if (finished.current || !pieces.some(piece => piece.id === pieceId) || !pieces.some(piece => piece.id === cellId)) return null;
+    const displaced = placementsRef.current[cellId];
+    const next = placePiece(placementsRef.current, pieceId, cellId);
+    if (next === placementsRef.current) return null;
+    const nextTray = updatePlacements(next);
+    // Arranging never produces correctness feedback, sound or vibration.
+    const returnedIndex = displaced ? nextTray.indexOf(displaced) : -1;
+    return returnedIndex >= 0 ? returnedIndex : null;
+  }, [pieces, updatePlacements]);
+  const remove = useCallback((pieceId: string): number | null => {
+    if (finished.current || !Object.values(placementsRef.current).includes(pieceId)) return null;
     const next = returnPiece(placementsRef.current, pieceId);
-    placementsRef.current = next;
-    setPlacements(next);
-  }, []);
+    return updatePlacements(next).indexOf(pieceId);
+  }, [updatePlacements]);
   const challenge = useCallback(() => {
     if (finished.current) return;
     if (Object.keys(placementsRef.current).length !== difficulty) {
@@ -70,14 +78,13 @@ export function usePuzzle(difficulty: Difficulty, sound: boolean) {
     if (finished.current || hintRef.current >= MAX_HINTS) return null;
     const correction = applyHint(pieces, placementsRef.current);
     if (!correction) return null;
-    placementsRef.current = correction.placements;
-    setPlacements(correction.placements);
+    updatePlacements(correction.placements);
     hintRef.current++; setHintCount(hintRef.current);
     playSound('piece-correct', sound); vibrate();
     return correction.pieceId;
-  }, [pieces, sound]);
+  }, [pieces, sound, updatePlacements]);
   const dismissNotice = useCallback((id: number) => {
     setNotice(current => current?.id === id ? null : current);
   }, []);
-  return { pieces, order, placements, placedCount: Object.keys(placements).length, hintCount, elapsed, attemptCount, notice, dismissNotice, result, saveStatus, place, remove, challenge, hint };
+  return { pieces, tray, placements, placedCount: Object.keys(placements).length, hintCount, elapsed, attemptCount, notice, dismissNotice, result, saveStatus, place, remove, challenge, hint };
 }

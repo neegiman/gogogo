@@ -18,6 +18,8 @@ export type PuzzlePiece = {
 };
 // Placement says nothing about correctness; each cell contains at most one piece.
 export type PiecePlacements = Record<string, string>;
+// Tray positions are independent of a piece's ID or its initial shuffled slot.
+export type PieceTray = (string | null)[];
 export const DIFFICULTIES: { count: Difficulty; cols: number; rows: number; label: string; color: string }[] = [
   { count: 12, cols: 3, rows: 4, label: '쉬움', color: 'rose' },
   { count: 16, cols: 4, rows: 4, label: '보통', color: 'blush' },

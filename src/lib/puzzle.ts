@@ -1,4 +1,4 @@
-import { DIFFICULTIES, type Difficulty, type PuzzlePiece, type PiecePlacements } from '@/types/puzzle';
+import { DIFFICULTIES, type Difficulty, type PuzzlePiece, type PiecePlacements, type PieceTray } from '@/types/puzzle';
 export function createPieces(difficulty: Difficulty): PuzzlePiece[] {
   const { cols, rows } = DIFFICULTIES.find(d => d.count === difficulty)!;
   return Array.from({ length: difficulty }, (_, i) => ({
@@ -17,11 +17,34 @@ export function shufflePieces<T>(items: T[], random = Math.random): T[] {
   return result;
 }
 export function placePiece(placements: PiecePlacements, pieceId: string, cellId: string): PiecePlacements {
-  if (placements[cellId]) return placements;
-  return { ...returnPiece(placements, pieceId), [cellId]: pieceId };
+  const previousCell = Object.keys(placements).find(cell => placements[cell] === pieceId);
+  if (previousCell === cellId) return placements;
+  const displaced = placements[cellId];
+  const next = returnPiece(placements, pieceId);
+  if (displaced && previousCell) next[previousCell] = displaced;
+  next[cellId] = pieceId;
+  return next;
 }
 export function returnPiece(placements: PiecePlacements, pieceId: string): PiecePlacements {
   return Object.fromEntries(Object.entries(placements).filter(([, id]) => id !== pieceId));
+}
+export function syncTray(tray: PieceTray, pieces: PuzzlePiece[], placements: PiecePlacements): PieceTray {
+  const placed = new Set(Object.values(placements));
+  const inTray = new Set<string>();
+  const valid = new Set(pieces.map(piece => piece.id));
+  const next = pieces.map((_, index) => {
+    const id = tray[index];
+    if (!id || !valid.has(id) || placed.has(id) || inTray.has(id)) return null;
+    inTray.add(id); return id;
+  });
+  // Keep remaining tray pieces still. Returned/displaced pieces take the first
+  // empty slot, without being tied to their original shuffled position.
+  for (const piece of pieces) {
+    if (placed.has(piece.id) || inTray.has(piece.id)) continue;
+    next[next.indexOf(null)] = piece.id;
+    inTray.add(piece.id);
+  }
+  return next.length === tray.length && next.every((id, index) => id === tray[index]) ? tray : next;
 }
 export function isPuzzleComplete(pieces: PuzzlePiece[], placements: PiecePlacements): boolean {
   return Object.keys(placements).length === pieces.length && pieces.every(piece => placements[piece.id] === piece.id);

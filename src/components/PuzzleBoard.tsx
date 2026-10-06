@@ -1,13 +1,13 @@
 'use client';
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
-import type { PuzzlePiece as Piece, PiecePlacements } from '@/types/puzzle';
+import type { PuzzlePiece as Piece, PiecePlacements, PieceTray } from '@/types/puzzle';
 import PuzzlePiece, { PieceCanvas } from './PuzzlePiece';
 import Icon from './Icon';
 
-export default function PuzzleBoard({ image, pieces, order, placements, completed, highlightPiece, onPlace, onReturn }: {
-  image: HTMLCanvasElement; pieces: Piece[]; order: Piece[]; placements: PiecePlacements;
+export default function PuzzleBoard({ image, pieces, tray, placements, completed, highlightPiece, onPlace, onReturn }: {
+  image: HTMLCanvasElement; pieces: Piece[]; tray: PieceTray; placements: PiecePlacements;
   completed: boolean; highlightPiece: string | null;
-  onPlace: (pieceId: string, cellId: string) => void; onReturn: (pieceId: string) => void;
+  onPlace: (pieceId: string, cellId: string) => number | null; onReturn: (pieceId: string) => number | null;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -15,11 +15,9 @@ export default function PuzzleBoard({ image, pieces, order, placements, complete
   const [trayPage, setTrayPage] = useState(0);
   const lastTap = useRef<{ cellId: string; pieceId: string; time: number } | null>(null);
   const byId = useMemo(() => new Map(pieces.map(piece => [piece.id, piece])), [pieces]);
-  const placedIds = useMemo(() => new Set(Object.values(placements)), [placements]);
-  const highlightIsPlaced = !!highlightPiece && placedIds.has(highlightPiece);
   const cols = 1 / pieces[0].width, rows = 1 / pieces[0].height;
-  const pageSize = compact ? 6 : order.length;
-  const pageCount = Math.ceil(order.length / pageSize);
+  const pageSize = compact ? 6 : tray.length;
+  const pageCount = Math.ceil(tray.length / pageSize);
   const page = Math.min(trayPage, pageCount - 1);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 600px), (max-height: 520px)');
@@ -30,31 +28,37 @@ export default function PuzzleBoard({ image, pieces, order, placements, complete
   useEffect(() => {
     if (!highlightPiece) return;
     setSelected(null); lastTap.current = null;
-    if (!compact || highlightIsPlaced) return;
-    const index = order.findIndex(piece => piece.id === highlightPiece);
+    if (!compact) return;
+    const index = tray.indexOf(highlightPiece);
     if (index >= 0) { setTrayPage(Math.floor(index / 6)); setSelected(null); lastTap.current = null; }
-  }, [compact, highlightPiece, order, highlightIsPlaced]);
+  }, [compact, highlightPiece, tray]);
   useEffect(() => {
-    if (!compact || placedIds.size === order.length) return;
+    if (!compact || tray.every(id => id === null)) return;
     setTrayPage(current => {
-      if (!order.slice(current * 6, current * 6 + 6).every(piece => placedIds.has(piece.id))) return current;
-      const next = order.findIndex(piece => !placedIds.has(piece.id));
+      if (tray.slice(current * 6, current * 6 + 6).some(id => id !== null)) return current;
+      const next = tray.findIndex(id => id !== null);
       return next >= 0 ? Math.floor(next / 6) : current;
     });
-  }, [compact, placedIds, order]);
+  }, [compact, tray]);
 
   function changePage(next: number) {
     setSelected(null); lastTap.current = null;
     setTrayPage(Math.max(0, Math.min(pageCount - 1, next)));
   }
   function returnToTray(pieceId: string) {
-    onReturn(pieceId); setSelected(null); lastTap.current = null;
-    const index = order.findIndex(piece => piece.id === pieceId);
-    if (compact && index >= 0) setTrayPage(Math.floor(index / 6));
-    setAnnouncement('조각을 아래 조각함으로 돌려보냈어요.');
+    const index = onReturn(pieceId); setSelected(null); lastTap.current = null;
+    if (compact && index !== null && index >= 0) setTrayPage(Math.floor(index / 6));
+    setAnnouncement('조각을 아래 조각함의 앞쪽 빈칸으로 돌려보냈어요.');
   }
   function cellClick(event: MouseEvent<HTMLButtonElement>, cellId: string) {
     const occupant = placements[cellId];
+    if (selected && selected !== occupant) {
+      const returnedIndex = onPlace(selected, cellId);
+      if (compact && returnedIndex !== null) setTrayPage(Math.floor(returnedIndex / 6));
+      setSelected(null); lastTap.current = null;
+      setAnnouncement(occupant ? '두 조각의 자리를 바꿨어요. 모두 붙인 뒤 도전해요!' : '조각을 놓았어요. 모두 붙인 뒤 도전해요!');
+      return;
+    }
     if (occupant) {
       const previous = lastTap.current, time = performance.now();
       // Ordinary clicks work for touch, pen, mouse and keyboard. Two touch clicks
@@ -65,13 +69,11 @@ export default function PuzzleBoard({ image, pieces, order, placements, complete
       }
       lastTap.current = event.detail === 0 ? null : { cellId, pieceId: occupant, time };
       setSelected(occupant);
-      setAnnouncement('두 번 누르면 아래로 내려가요. 빈 자리를 누르면 옮길 수 있어요.');
+      setAnnouncement('다른 조각을 누르면 자리를 바꿔요. 두 번 누르면 아래로 내려가요.');
       return;
     }
     lastTap.current = null;
-    if (!selected) { setAnnouncement('아래에서 조각을 먼저 골라요.'); return; }
-    onPlace(selected, cellId); setSelected(null);
-    setAnnouncement('조각을 놓았어요. 모두 붙인 뒤 도전해요!');
+    setAnnouncement('조각을 먼저 골라요.');
   }
   return <>
     <div className="puzzle-board" style={{ gridTemplateColumns: `repeat(${cols},1fr)`, gridTemplateRows: `repeat(${rows},1fr)` }} aria-label="퍼즐 맞추기판" aria-describedby="board-instructions">
@@ -88,13 +90,16 @@ export default function PuzzleBoard({ image, pieces, order, placements, complete
         </button>;
       })}
     </div>
-    <p className="board-instructions" id="board-instructions">붙인 조각은 두 번 톡! 누르면 아래로 내려가요.</p>
+    <p className="board-instructions" id="board-instructions">조각을 톡, 다른 조각을 톡! 서로 바꿔요.<br/>두 번 톡! 누르면 아래 빈칸으로 내려가요.</p>
     <section className="tray-area" data-paged={compact} aria-label="퍼즐 조각함">
-      <div className="tray-heading"><span>{selected ? '고른 조각을 놓을 빈 자리를 톡!' : '조각을 톡! 누른 뒤, 빈 자리를 톡!'}</span><span>한 조각씩 천천히!</span></div>
+      <div className="tray-heading"><span>{selected ? '빈 자리나 바꿀 조각을 톡!' : '조각을 톡! 누른 뒤, 놓을 자리를 톡!'}</span><span>한 조각씩 천천히!</span></div>
       <div className="piece-tray">
-        {order.map((piece, index) => <div key={piece.id} className={`tray-slot ${placedIds.has(piece.id) ? 'placed-slot' : ''}`} style={{ aspectRatio: `${piece.width} / ${piece.height}` }} hidden={compact && Math.floor(index / 6) !== page}>
-          {!placedIds.has(piece.id) ? <PuzzlePiece image={image} piece={piece} selected={selected === piece.id} highlighted={highlightPiece === piece.id} onSelect={() => { setSelected(piece.id); lastTap.current = null; setAnnouncement('빈 자리를 톡 눌러 조각을 놓아요.'); }}/> : <span aria-hidden="true">위에 있어요</span>}
-        </div>)}
+        {tray.map((pieceId, index) => {
+          const piece = pieceId ? byId.get(pieceId) : undefined;
+          return <div key={index} data-tray-slot={index + 1} data-tray-piece-id={pieceId ?? undefined} className={`tray-slot ${piece ? '' : 'placed-slot'}`} style={{ aspectRatio: `${pieces[0].width} / ${pieces[0].height}` }} hidden={compact && Math.floor(index / 6) !== page}>
+            {piece ? <PuzzlePiece key={piece.id} image={image} piece={piece} selected={selected === piece.id} highlighted={highlightPiece === piece.id} onSelect={() => { setSelected(piece.id); lastTap.current = null; setAnnouncement('빈 자리나 바꿀 조각을 톡 눌러요.'); }}/> : <span aria-hidden="true">빈 자리</span>}
+          </div>;
+        })}
       </div>
       {compact && <nav className="tray-pagination" aria-label="조각함 넘기기">
         <button className="tray-page-button" onClick={() => changePage(page - 1)} disabled={page === 0} aria-label="이전 조각"><Icon name="back" size={19}/>이전</button>
