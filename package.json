@@ -1,0 +1,28 @@
+{
+  "name": "photo-puzzle",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/prepare-public.mjs dev && next dev",
+    "build": "node scripts/prepare-public.mjs production && next build && node scripts/build-offline.mjs",
+    "preview": "node scripts/preview.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "verify:dev": "node scripts/verify-dev.mjs"
+  },
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": { "node": ">=22" }
+}

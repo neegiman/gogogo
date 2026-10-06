@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#cbdfe6"/><stop offset="1" stop-color="#ecede1"/></linearGradient><linearGradient id="hill" x2=".3" y2="1"><stop stop-color="#85a57b"/><stop offset="1" stop-color="#4f794e"/></linearGradient><g id="daisy"><g fill="#fffdf0"><ellipse cy="-27" rx="12" ry="23"/><ellipse cy="-27" rx="12" ry="23" transform="rotate(45)"/><ellipse cy="-27" rx="12" ry="23" transform="rotate(90)"/><ellipse cy="-27" rx="12" ry="23" transform="rotate(135)"/><ellipse cy="-27" rx="12" ry="23" transform="rotate(180)"/><ellipse cy="-27" rx="12" ry="23" transform="rotate(225)"/><ellipse cy="-27" rx="12" ry="23" transform="rotate(270)"/><ellipse cy="-27" rx="12" ry="23" transform="rotate(315)"/></g><circle r="15" fill="#e3ba5a"/><circle r="8" fill="#d3a543"/></g><g id="flower"><path d="M0 0Q-9 71 5 136" stroke="#51724a" stroke-width="6" fill="none"/><path d="M2 70Q-35 32-34 69Q-26 95 2 95M2 96Q41 59 37 96Q23 113 2 113" fill="#618552"/><use href="#daisy"/></g></defs>
+<rect width="1024" height="1024" fill="url(#sky)"/>
+<circle cx="784" cy="174" r="69" fill="#fcf0c8"/>
+<g fill="#ffffff" opacity=".65"><path d="M123 228c-3-28 29-37 44-24 9-39 64-49 84-12 39-9 58 17 50 39H123Z"/><path d="M560 103c-2-17 19-25 32-14 9-28 44-30 57-4 27-6 39 15 36 24H560Z"/></g>
+<path d="M0 513Q230 355 498 494T1024 418V1024H0Z" fill="#b0be8d"/>
+<path d="M0 589Q221 387 582 581T1024 490V1024H0Z" fill="#8fa476"/>
+<path d="M0 783Q408 403 1024 663V1024H0Z" fill="url(#hill)"/>
+<path d="M656 566Q443 650 627 773T504 1024H684Q836 822 684 766T710 578Z" fill="#c6b88b" opacity=".9"/>
+<g opacity=".9" fill="#5e8154"><ellipse cx="151" cy="610" rx="56" ry="10"/><ellipse cx="772" cy="774" rx="55" ry="9"/><ellipse cx="356" cy="703" rx="58" ry="10"/></g>
+<g><use href="#flower" x="160" y="526" transform="rotate(-12 160 526) scale(.78)"/><use href="#flower" x="350" y="614" transform="rotate(9 350 614)"/><use href="#flower" x="800" y="625" transform="rotate(-10 800 625)"/><use href="#flower" x="178" y="816" transform="rotate(-8 178 816)"/><use href="#flower" x="904" y="852" transform="rotate(14 904 852)"/><use href="#flower" x="490" y="891" transform="rotate(5 490 891)"/><use href="#flower" x="59" y="666" transform="rotate(12 59 666)"/></g>
+<g fill="#eee6b5"><circle cx="227" cy="711" r="6"/><circle cx="434" cy="761" r="5"/><circle cx="60" cy="935" r="6"/><circle cx="745" cy="886" r="5"/><circle cx="910" cy="577" r="4"/><circle cx="512" cy="677" r="4"/></g>
+<g stroke="#a8bd83" stroke-width="3" fill="none"><path d="m67 832 5-23 6 23m664-126 5-20 5 20m-474 62 6-24 7 23m533 191 6-19 7 18M48 991l5-19 7 17"/></g>
+<g transform="translate(484 463) rotate(-15)"><path d="M0 0Q-42-40-30-51T0-5Q20-53 35-38T0 0" fill="#f0c46f"/><path d="M0-5 0 18" stroke="#9b8657" stroke-width="3"/></g>
+</svg>

@@ -1,0 +1,236 @@
+import { test, expect, type Page } from '@playwright/test';
+const root = '/gogogo/';
+async function prepare(page: Page, count = 12) {
+  await page.goto(root);
+  await page.getByRole('button', { name: '샘플 퍼즐 해보기' }).click();
+  await expect(page.getByRole('heading', { name: '사진을 예쁘게 맞춰요' })).toBeVisible();
+  await page.locator('.difficulty-card').filter({ hasText: `${count}개` }).click();
+  await page.getByRole('button', { name: '붙이러 고고고!' }).click();
+  await expect(page.locator('.puzzle-piece')).toHaveCount(count);
+}
+async function revealPiece(page: Page, id: string) {
+  const piece=page.locator(`[data-piece-id="${id}"]`);
+  if(await piece.isVisible()) return;
+  const previous=page.getByRole('button',{name:'이전 조각'});
+  while(await previous.isEnabled()) await previous.click();
+  for(let i=0;i<4 && !(await piece.isVisible());i++) await page.getByRole('button',{name:'다음 조각'}).click();
+  await expect(piece).toBeVisible();
+}
+async function tapPlace(page: Page, id: string) {
+  await revealPiece(page,id);
+  if (await page.evaluate(()=>navigator.maxTouchPoints>0)) {
+    await page.locator(`[data-piece-id="${id}"]`).tap();
+    await page.locator(`[data-target-id="${id}"]`).tap();
+  } else {
+    await page.locator(`[data-piece-id="${id}"]`).click();
+    await page.locator(`[data-target-id="${id}"]`).click();
+  }
+}
+test('Pages assets, install metadata and offline cache are complete', async ({ page, request }, info) => {
+  const errors: string[] = [], failed: string[] = [];
+  page.on('pageerror', e=>errors.push(e.message));
+  page.on('response', r=>{ if(r.status()>=400) failed.push(r.url()); });
+  await page.goto(root);
+  await expect(page.getByRole('button', { name: '사진 찍기' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '사진 선택', exact: true })).toBeVisible();
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await expect(page.getByText('오프라인에서도 놀 수 있어요')).toBeVisible();
+  const manifest = await (await request.get(`${root}manifest.webmanifest`)).json();
+  expect(manifest.name).toBe('고고고! 사진퍼즐');
+  expect(manifest.short_name).toBe('고고고!');
+  await expect(page).toHaveTitle(/고고고! 사진퍼즐/);
+  expect(new URL(manifest.start_url,`http://127.0.0.1:4173${root}manifest.webmanifest`).pathname).toBe(root);
+  expect(new URL(manifest.scope,`http://127.0.0.1:4173${root}manifest.webmanifest`).pathname).toBe(root);
+  for(const path of ['icons/icon-192.png','icons/icon-512.png','sounds/piece-correct.wav','sounds/puzzle-complete.wav','sw.js','puzzle/','records/']) expect((await request.get(`${root}${path}`)).status()).toBe(200);
+  const resources = await page.evaluate(async()=>{
+    const names=(await caches.keys()).filter(n=>n.startsWith('photo-puzzle-v1-'));
+    const cache=await caches.open(names[0]);return (await cache.keys()).map(r=>r.url);
+  });
+  expect(resources.length).toBeGreaterThan(15);
+  for(const url of resources) expect((await request.get(url)).status(),url).toBe(200);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:`test-results/home-${info.project.name}.png`,fullPage:true});
+  expect(errors).toEqual([]);expect(failed).toEqual([]);
+});
+for(const count of [12,16,20,24]) test(`${count} pieces: wrong target, guide, progressive hints, completion and persisted records`,async({page},info)=>{
+  const failed: string[]=[];
+  page.on('response',r=>{if(r.status()>=400)failed.push(r.url());});
+  const uploads: string[]=[];
+  page.on('request',r=>{if(!['GET','HEAD'].includes(r.method()))uploads.push(r.method()+' '+r.url());});
+  await prepare(page,count);
+  expect(await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.every((node,i)=>{
+    const box=node.getBoundingClientRect(),slot=node.parentElement!.getBoundingClientRect();
+    const next=nodes[i+1]?.getBoundingClientRect();
+    return box.width<=slot.width+1 && (!next || Math.abs(next.y-box.y)>2 || box.right<=next.left+1);
+  }))).toBe(true);
+  const pieces=await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
+  await page.locator(`[data-piece-id="${pieces[0]}"]`).click();
+  await page.locator(`[data-target-id="${pieces[1]}"]`).click();
+  await expect(page.locator('.board-cell.locked')).toHaveCount(0);
+  await page.getByRole('button',{name:'원본 보기'}).click();await expect(page.locator('.original-guide')).toBeVisible();
+  await page.getByRole('button',{name:'원본 보기'}).click();await expect(page.locator('.original-guide')).toHaveCount(0);
+  await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.original-guide')).toBeVisible();
+  await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.hint-piece')).toHaveCount(1);
+  await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.hint-target')).toHaveCount(1);
+  // Real mouse pointer capture and release; touch project also checks native touch tap placement below.
+  const first=page.locator(`[data-piece-id="${pieces[0]}"]`),target=page.locator(`[data-target-id="${pieces[0]}"]`);
+  await first.scrollIntoViewIfNeeded();const sourceRect=(await first.boundingBox())!,targetRect=(await target.boundingBox())!;
+  await page.mouse.move(sourceRect.x+sourceRect.width/2,sourceRect.y+sourceRect.height/2);await page.mouse.down();
+  await page.mouse.move(targetRect.x+targetRect.width/2,targetRect.y+targetRect.height/2,{steps:12});await page.mouse.up();
+  await expect(page.locator('.board-cell.locked')).toHaveCount(1);
+  await page.screenshot({path:`test-results/playing-${count}-${info.project.name}.png`,fullPage:true});
+  for(const id of pieces.slice(1)) await tapPlace(page,id);
+  await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toBeVisible();
+  await expect(page.getByText('이 기기에 기록을 저장했어요.')).toBeVisible();
+  await expect(page.getByText('힌트 3번',{exact:true})).toBeVisible();
+  await page.screenshot({path:`test-results/complete-${count}-${info.project.name}.png`});
+  await page.getByRole('link',{name:'기록 보기',exact:true}).click();
+  await expect(page.locator('.record-row')).toHaveCount(1);
+  await page.reload();await expect(page.locator('.record-row')).toHaveCount(1);
+  await page.getByRole('button',{name:'기록 삭제',exact:true}).click();
+  await page.getByRole('button',{name:'그대로 둘래요'}).click();await expect(page.locator('.record-row')).toHaveCount(1);
+  await page.getByRole('button',{name:'기록 삭제',exact:true}).click();await page.getByRole('button',{name:'모두 지우기'}).click();
+  await expect(page.locator('.record-row')).toHaveCount(0);await page.reload();await expect(page.locator('.record-row')).toHaveCount(0);
+  expect(failed).toEqual([]);expect(uploads).toEqual([]);
+});
+test('local photo processing, crop, rotation, cancel and reload recovery',async({page})=>{
+  await page.goto(root);
+  const makePhoto=async(width:number,height:number)=>Buffer.from(await page.evaluate(async({width,height})=>{
+    const img=new Image();img.src='/gogogo/sample.svg';await img.decode();
+    const c=document.createElement('canvas');c.width=width;c.height=height;c.getContext('2d')!.drawImage(img,0,0,width,height);
+    return c.toDataURL('image/jpeg',.88).split(',')[1];
+  },{width,height}),'base64');
+  for(const [width,height] of [[900,1200],[1600,900],[4000,3000]]) {
+    await page.getByLabel('기기 사진 선택').setInputFiles({name:'local-photo.jpg',mimeType:'image/jpeg',buffer:await makePhoto(width,height)});
+    await expect(page.locator('.crop-frame canvas')).toBeVisible();
+    const before=await page.locator('.crop-frame canvas').evaluate((c:HTMLCanvasElement)=>c.toDataURL());
+    await page.getByRole('button',{name:'90° 회전'}).click();
+    await expect.poll(()=>page.locator('.crop-frame canvas').evaluate((c:HTMLCanvasElement)=>c.toDataURL())).not.toBe(before);
+    await page.getByRole('button',{name:'사진 확대',exact:true}).click();
+    await expect(page.getByRole('slider')).toHaveValue('1.2');
+    const canvas=page.locator('.crop-frame canvas'),box=(await canvas.boundingBox())!;
+    await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width*.7,box.y+box.height*.6,{steps:10});await page.mouse.up();
+    await page.getByRole('button',{name:'처음 상태로'}).click();await expect(page.getByRole('slider')).toHaveValue('1');
+    await page.getByRole('button',{name:'다른 사진',exact:true}).click();
+  }
+  // JPEG EXIF orientation 6 rotates a landscape sensor image clockwise.
+  const raw=Buffer.from(await page.evaluate(()=>{
+    const c=document.createElement('canvas');c.width=400;c.height=200;const ctx=c.getContext('2d')!;
+    for(const [x,y,color] of [[0,0,'#ff0000'],[200,0,'#00ff00'],[0,100,'#0000ff'],[200,100,'#ffff00']] as const){ctx.fillStyle=color;ctx.fillRect(x,y,200,100);}
+    return c.toDataURL('image/jpeg',1).split(',')[1];
+  }),'base64');
+  const exif=Buffer.alloc(36);exif.writeUInt16BE(0xffe1,0);exif.writeUInt16BE(34,2);exif.write('Exif\0\0',4,'binary');exif.write('II',10);exif.writeUInt16LE(42,12);exif.writeUInt32LE(8,14);exif.writeUInt16LE(1,18);exif.writeUInt16LE(0x0112,20);exif.writeUInt16LE(3,22);exif.writeUInt32LE(1,24);exif.writeUInt16LE(6,28);
+  await page.getByLabel('기기 사진 선택').setInputFiles({name:'camera-orientation.jpg',mimeType:'image/jpeg',buffer:Buffer.concat([raw.subarray(0,2),exif,raw.subarray(2)])});
+  await expect.poll(async()=>page.locator('.crop-frame canvas').evaluate((c:HTMLCanvasElement)=>{
+    const ctx=c.getContext('2d')!,left=ctx.getImageData(c.width*.15,c.height*.15,1,1).data,right=ctx.getImageData(c.width*.85,c.height*.15,1,1).data;
+    return left[2]>180&&left[0]<80&&right[0]>180&&right[2]<80;
+  })).toBe(true);
+  await page.getByRole('button',{name:'다른 사진',exact:true}).click();
+  await page.getByLabel('기기 사진 선택').setInputFiles([]);await expect(page.getByRole('heading',{name:'찍고, 자르고, 붙이고. 고고고!'})).toBeVisible();
+  await page.getByLabel('기기 사진 선택').setInputFiles({name:'bad.txt',mimeType:'text/plain',buffer:Buffer.from('no photo')});
+  await expect(page.locator('.error-notice')).toContainText('사진 파일');
+  await page.getByLabel('기기 사진 선택').setInputFiles({name:'broken.jpg',mimeType:'image/jpeg',buffer:Buffer.from('not a jpeg')});
+  await expect(page.locator('.error-notice')).toContainText('열 수 없어요');
+  await page.getByRole('button',{name:'샘플 퍼즐 해보기'}).click();await expect(page.locator('.crop-frame')).toBeVisible();await page.reload();
+  await expect(page.getByRole('button',{name:'사진 찍기'})).toBeVisible();
+  await prepare(page);await page.reload();await expect(page.getByRole('heading',{name:'어떤 사진으로 놀까요?'})).toBeVisible();
+});
+test('offline launch, local file selection, play and IndexedDB work without a network',async({page,context})=>{
+  await page.goto(root);await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
+  await expect(page.getByText('오프라인에서도 놀 수 있어요')).toBeVisible();
+  await page.reload();
+  await context.setOffline(true);await page.reload();
+  await expect(page.getByRole('button',{name:'사진 선택',exact:true})).toBeVisible();
+  // A user file, not just the bundled sample, goes through offline decoding and editing.
+  const buffer=Buffer.from(await page.evaluate(()=>{
+    const c=document.createElement('canvas');c.width=800;c.height=1100;const ctx=c.getContext('2d')!;
+    const g=ctx.createLinearGradient(0,0,800,1100);g.addColorStop(0,'#da9b67');g.addColorStop(1,'#4b8d78');ctx.fillStyle=g;ctx.fillRect(0,0,800,1100);
+    return c.toDataURL('image/png').split(',')[1];
+  }),'base64');
+  await page.getByLabel('기기 사진 선택').setInputFiles({name:'offline-local.png',mimeType:'image/png',buffer});
+  await page.getByRole('button',{name:'붙이러 고고고!'}).click();await expect(page.locator('.puzzle-piece')).toHaveCount(12);
+  const ids=await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
+  for(const id of ids) await tapPlace(page,id);
+  await expect(page.getByText('이 기기에 기록을 저장했어요.')).toBeVisible();await page.getByRole('link',{name:'기록 보기',exact:true}).click();await page.reload();await expect(page.locator('.record-row')).toHaveCount(1);
+  const cached=await page.evaluate(async()=>{const keys=await caches.keys();const lists=await Promise.all(keys.map(async k=>(await(await caches.open(k)).keys()).map(r=>r.url)));return lists.flat();});
+  expect(cached.every(url=>url.startsWith('http://127.0.0.1:4173/gogogo/'))).toBe(true);expect(cached.some(url=>url.startsWith('blob:'))).toBe(false);
+});
+test('sound preference persists and optional browser features fail gracefully',async({page})=>{
+  await page.addInitScript(()=>{
+    Object.defineProperty(navigator,'vibrate',{value:undefined,configurable:true});
+    HTMLMediaElement.prototype.play=()=>Promise.reject(new Error('audio unavailable'));
+  });
+  await page.goto(root);await page.getByRole('button',{name:'소리 끄기'}).click();await page.reload();await expect(page.getByRole('button',{name:'소리 켜기'})).toBeVisible();
+  await page.getByRole('button',{name:'소리 켜기'}).click();await prepare(page);
+  const ids=await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
+  for(const id of ids) await tapPlace(page,id);
+  await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toBeVisible();await page.getByRole('button',{name:'다시 하기'}).click();await expect(page.locator('.puzzle-piece')).toHaveCount(12);await expect(page.locator('.board-cell.locked')).toHaveCount(0);
+});
+test('native touch drag, pointer cancellation, pinch zoom and viewport changes',async({page,context},info)=>{
+  test.skip(info.project.name!=='touch','Requires native touch emulation');
+  await page.goto(root);await page.getByRole('button',{name:'샘플 퍼즐 해보기'}).click();
+  const cdp=await context.newCDPSession(page);
+  const crop=(await page.locator('.crop-frame canvas').boundingBox())!;
+  const cx=crop.x+crop.width/2,cy=crop.y+crop.height/2;
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:cx-30,y:cy,id:1},{x:cx+30,y:cy,id:2}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:cx-60,y:cy,id:1},{x:cx+60,y:cy,id:2}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await expect.poll(async()=>Number(await page.getByRole('slider').inputValue())).toBeGreaterThan(1.5);
+  await page.getByRole('button',{name:'붙이러 고고고!'}).tap();
+  const piece=page.locator('.puzzle-piece').first(),id=await piece.getAttribute('data-piece-id');
+  await piece.scrollIntoViewIfNeeded();const p=(await piece.boundingBox())!,t=(await page.locator(`[data-target-id="${id}"]`).boundingBox())!;
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x+p.width/2,y:p.y+p.height/2,id:1}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:t.x+t.width/2,y:t.y+t.height/2,id:1}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);await expect(page.locator('.board-cell.locked')).toHaveCount(0);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x+p.width/2,y:p.y+p.height/2,id:1}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:t.x+t.width/2,y:t.y+t.height/2,id:1}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await expect(page.locator('.board-cell.locked')).toHaveCount(1);
+  await page.setViewportSize({width:740,height:390});await expect(page.locator('.board-cell.locked')).toHaveCount(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.setViewportSize({width:320,height:640});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  // The compact tray keeps a bottom piece and its target visible on a short phone.
+  const last=page.locator('.puzzle-piece').last(),lastId=await last.getAttribute('data-piece-id');await revealPiece(page,lastId!);await last.scrollIntoViewIfNeeded();
+  const lastBox=(await last.boundingBox())!,lastTarget=(await page.locator(`[data-target-id="${lastId}"]`).boundingBox())!;
+  expect(lastTarget.y).toBeGreaterThanOrEqual(0);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:lastBox.x+lastBox.width/2,y:lastBox.y+lastBox.height/2,id:1}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:lastTarget.x+lastTarget.width/2,y:lastTarget.y+lastTarget.height/2,id:1}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await expect(page.locator('.board-cell.locked')).toHaveCount(2);
+  await cdp.detach();
+});
+test('IndexedDB failure preserves a cheerful completed puzzle',async({page})=>{
+  await page.addInitScript(()=>Object.defineProperty(window,'indexedDB',{get(){throw new Error('storage denied');},configurable:true}));
+  await prepare(page);
+  const ids=await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
+  for(const id of ids) await tapPlace(page,id);
+  await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toBeVisible();
+  await expect(page.getByText('퍼즐은 완성했어요!',{exact:false})).toBeVisible();
+});
+test('phone tray paging, hint navigation and reachable editor actions',async({page},info)=>{
+  test.skip(info.project.name!=='touch','Phone layout checks');
+  for(const width of [320,375,390,430]) {
+    await page.setViewportSize({width,height:844});await page.goto(root);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    const camera=(await page.getByRole('button',{name:'사진 찍기'}).boundingBox())!;
+    expect(camera.height).toBeGreaterThanOrEqual(56);expect(camera.y+camera.height).toBeLessThan(844);
+  }
+  await page.getByRole('button',{name:'샘플 퍼즐 해보기'}).tap();
+  const start=page.getByRole('button',{name:'붙이러 고고고!'}),first=(await start.boundingBox())!;
+  expect(first.height).toBeGreaterThanOrEqual(56);expect(first.y+first.height).toBeLessThanOrEqual(844);
+  await page.locator('.difficulty-card').filter({hasText:'24개'}).tap();
+  const after=(await start.boundingBox())!;expect(after.y).toBeCloseTo(first.y,0);
+  await page.screenshot({path:'test-results/editor-phone.png',fullPage:true});
+  await start.tap();await expect(page.locator('.puzzle-piece:visible')).toHaveCount(6);
+  expect((await page.locator('.puzzle-piece:visible').first().boundingBox())!.width).toBeGreaterThan(75);
+  await page.getByRole('button',{name:'다음 조각'}).tap();await page.getByRole('button',{name:'다음 조각'}).tap();await page.getByRole('button',{name:'다음 조각'}).tap();
+  await expect(page.getByRole('button',{name:'다음 조각'})).toBeDisabled();
+  await page.getByRole('button',{name:'힌트',exact:true}).tap();await page.getByRole('button',{name:'힌트',exact:true}).tap();
+  await expect(page.locator('.hint-piece')).toBeVisible();await expect(page.locator('.tray-page-count')).toContainText('1');
+  const ids=await page.locator('.puzzle-piece:visible').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
+  for(const id of ids) await tapPlace(page,id);
+  await expect(page.locator('.board-cell.locked')).toHaveCount(6);await expect(page.locator('.tray-page-count')).toContainText('2');
+  await expect(page.locator('.puzzle-piece:visible')).toHaveCount(6);
+  await page.screenshot({path:'test-results/paged-tray-phone.png',fullPage:true});
+});

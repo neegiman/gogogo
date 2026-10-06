@@ -1,0 +1,104 @@
+/* Brand and touch-first refinements. Imported after the shared base styles. */
+.brand-wordmark { display: flex; flex-direction: column; gap: 1px; }
+.brand-wordmark b { font-size: 26px; letter-spacing: -1.5px; line-height: 1.05; }
+.brand-wordmark b span { color: #ec84a6; }
+.brand-wordmark small { font-size: 10px; font-weight: 500; letter-spacing: 2px; color: var(--muted); }
+.play-steps { display: flex; padding: 0; margin: 20px 0; gap: 10px; list-style: none; }
+.play-steps li { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); background: var(--surface-soft); font-size: 12px; font-weight: 600; }
+.play-steps li.current { color: var(--primary); border-color: #d087a7; background: var(--rose); }
+.play-step-number { display: grid; place-items: center; width: 19px; height: 19px; font-size: 10px; border-radius: 50%; background: var(--rose); }
+.current .play-step-number { background: var(--primary); color: white; }
+.editor-page > .play-steps { margin-top: 0; margin-bottom: 25px; }
+.editor-difficulty { margin: 20px 0; padding-top: 20px; border-top: 1px solid var(--line); }
+.game-title small { display: block; margin-bottom: 4px; font-size: 10px; font-weight: 500; color: var(--muted); }
+.tray-area { min-width: 0; }
+.tray-slot[hidden] { display: none; }
+.tray-area[data-paged='true'] .piece-tray { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tray-area[data-paged='true'] .tray-slot { min-height: 56px; }
+.tray-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.tray-page-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 84px; min-height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 13px; background: white; color: var(--primary); font-size: 12px; font-weight: 700; }
+.tray-page-button:disabled { opacity: .35; }
+.tray-page-count { color: var(--muted); font-size: 12px; }
+.tray-page-count strong { color: var(--primary); margin-left: 4px; }
+
+@media (max-width: 600px) {
+  .site-header { padding-left: 16px; padding-right: 16px; }
+  .header-inner { gap: 10px; }
+  .brand { min-height: 48px; }
+  .brand-icon { width: 34px; height: 34px; margin-right: 7px; }
+  .brand-wordmark b { font-size: 24px; }
+  .brand-wordmark small { font-size: 8px; letter-spacing: 1.5px; }
+  .header-inner nav { gap: 14px; }
+  .nav-link { font-size: 12px; min-height: 48px; }
+  .sound-button, .game-sound { min-width: 44px; width: 44px; min-height: 44px; }
+  .hero { padding-top: 24px; padding-bottom: 18px; }
+  .hero h1 { font-size: clamp(32px, 9.3vw, 41px); letter-spacing: -1.8px; }
+  .hero-copy > .eyebrow { margin-bottom: 15px; }
+  .hero-description { font-size: 14px; margin-top: 13px; }
+  .hero-art { display: none; }
+  .play-steps { gap: 7px; margin: 18px 0; }
+  .play-steps li { font-size: 13px; padding: 7px 5px; gap: 5px; }
+  .photo-actions { margin-top: 18px; }
+  .photo-actions .button { min-height: 60px; max-width: none; font-size: 16px; border-radius: 16px; }
+  .privacy-note { font-size: 11px; line-height: 1.7; }
+  .sample-link > span { font-size: 11px; }
+  .sample-link .text-button { min-height: 48px; font-size: 12px; }
+  .difficulty-selector legend { display: block; font-size: 17px; }
+  .difficulty-selector legend > span { display: block; font-size: 11px; margin-top: 7px; letter-spacing: 0; }
+  .difficulty-label { font-size: 12px; }
+  .records-prompt p { font-size: 11px; }
+  .records-prompt .text-button { font-size: 12px; min-height: 48px; }
+  .records-prompt { grid-template-columns: 38px 1fr; }
+  .records-prompt .text-button { grid-column: 2; }
+  .records-prompt h2 { font-size: 14px; }
+  .step h3 { font-size: 13px; }
+  .step p { font-size: 11px; }
+  .how-heading p { font-size: 12px; }
+  .home-bottom { font-size: 11px; }
+  .editor-page { margin-top: 20px; padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .editor-page > .play-steps { margin-bottom: 20px; }
+  .page-intro p { font-size: 13px; }
+  .crop-frame { width: min(100%, 38svh, 360px); }
+  .zoom-control { gap: 12px; }
+  .zoom-control button { width: 48px; height: 48px; }
+  .zoom-control input { height: 48px; }
+  .editor-tools { gap: 10px; }
+  .editor-tools .button { flex: 1; min-height: 48px; background: var(--blush); border-radius: 12px; font-size: 13px; }
+  .editor-confirm { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; margin: 0; padding: 12px max(16px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: var(--surface-soft); box-shadow: 0 -6px 22px #702c4a0a; }
+  .editor-confirm .button { min-height: 56px; font-size: 15px; }
+  .game-page { padding: calc(12px + env(safe-area-inset-top)) 16px 12px; }
+  .game-topbar { gap: 8px; margin-bottom: 12px; }
+  .game-title { font-size: 13px; }
+  .game-title small { font-size: 9px; }
+  .timer { font-size: 11px; }
+  .game-encouragement { font-size: 13px; }
+  .puzzle-board { width: min(100%, 40svh, 360px); }
+  .tray-heading { margin-top: 16px; font-size: 12px; }
+  .tray-heading span:last-child { font-size: 10px; }
+  .puzzle-toolbar { position: sticky; bottom: 0; z-index: 5; margin: 8px -16px -12px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--bg); }
+  .puzzle-toolbar .button { flex: 1; min-height: 52px; padding: 0 10px; font-size: 15px; }
+  .records-page .record-row { padding: 15px 12px; }
+  .record-row h3 { font-size: 13px; }
+  .record-row > div > span { font-size: 11px; }
+  .record-time { font-size: 11px; }
+}
+
+@media (max-width: 350px) {
+  .brand-wordmark b { font-size: 22px; }
+  .header-inner nav { gap: 9px; }
+  .nav-link { font-size: 11px; }
+  .play-steps li { font-size: 12px; gap: 4px; }
+  .play-step-number { width: 17px; height: 17px; }
+  .editor-confirm .button { font-size: 13px; }
+  .game-title { font-size: 12px; }
+  .timer { font-size: 10px; }
+  .tray-heading span:last-child { display: none; }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .tray-area { grid-column: 2; grid-row: 4 / 6; }
+  .tray-area .tray-heading { margin: 0 0 8px; }
+  .tray-area[data-paged='true'] .tray-slot { min-height: 44px; }
+  .tray-area .tray-page-button { min-height: 44px; }
+  .puzzle-toolbar { grid-row: 6; }
+}
