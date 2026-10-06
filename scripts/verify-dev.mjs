@@ -17,7 +17,7 @@ try {
   await page.getByRole('button',{name:'샘플 퍼즐 해보기'}).click();await page.getByRole('button',{name:'붙이러 고고고!'}).click();
   await page.locator('.puzzle-piece').first().waitFor();
   if(await page.locator('.puzzle-piece').count()!==12)throw new Error('Development puzzle pieces missing');
-  if(new URL(page.url()).pathname!=='/puzzle/')throw new Error('Development path incorrectly prefixed');
+  if(new URL(page.url()).pathname!=='/')throw new Error('Photo startup unexpectedly navigated away from the development root');
   await page.getByRole('link',{name:'처음으로',exact:true}).click();
   await page.getByRole('link',{name:'나의 기록'}).click();await page.getByRole('heading',{name:'반짝반짝, 나의 기록'}).waitFor();
   if(new URL(page.url()).pathname!=='/records/')throw new Error('Development records path incorrectly prefixed');

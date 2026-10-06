@@ -283,7 +283,7 @@ test('local photo processing, crop, rotation, cancel and reload recovery',async(
   await expect(page.locator('.error-notice')).toContainText('열 수 없어요');
   await page.getByRole('button',{name:'샘플 퍼즐 해보기'}).click();await expect(page.locator('.crop-frame')).toBeVisible();await page.reload();
   await expect(page.getByRole('button',{name:'사진 찍기'})).toBeVisible();
-  await prepare(page);await page.reload();await expect(page.getByRole('heading',{name:'어떤 사진으로 놀까요?'})).toBeVisible();
+  await prepare(page);await page.reload();await expect(page.getByRole('button',{name:'사진 찍기'})).toBeVisible();
 });
 test('offline launch, local file selection, play and IndexedDB work without a network',async({page,context})=>{
   await page.goto(root);await page.evaluate(async()=>{await navigator.serviceWorker.ready;});

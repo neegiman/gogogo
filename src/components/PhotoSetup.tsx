@@ -1,6 +1,5 @@
 'use client';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { normalizeImage, loadSample } from '@/lib/image';
 import { DEFAULT_DIFFICULTY, type Difficulty } from '@/types/puzzle';
@@ -11,20 +10,26 @@ import HeroIllustration from './HeroIllustration';
 import ImageEditor from './ImageEditor';
 import Icon from './Icon';
 import PlaySteps from './PlaySteps';
+import PuzzleGame from './PuzzleGame';
 export default function PhotoSetup() {
   const [image, setImage] = useState<HTMLCanvasElement | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>(DEFAULT_DIFFICULTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const { setSession } = useApp();
-  const router = useRouter();
+  const { session, setSession } = useApp();
   async function select(file?: File) {
     setBusy(true); setError('');
     try { setImage(file ? await normalizeImage(file) : await loadSample()); }
     catch (error) { setError(error instanceof Error ? error.message : '사진을 다시 골라 주세요.'); }
     finally { setBusy(false); }
   }
-  function start(cropped: HTMLCanvasElement) { setSession({ image: cropped, difficulty }); router.push('/puzzle/'); }
+  function start(cropped: HTMLCanvasElement) {
+    // Start locally in this React tree. A route request must never hold the crop
+    // button disabled or discard an in-memory photo on a full-page fallback.
+    setSession({ image: cropped, difficulty }); setImage(null);
+    window.scrollTo(0, 0);
+  }
+  if (session) return <PuzzleGame/>;
   if (image) return <main className="editor-page"><PlaySteps active={2}/><div className="page-intro"><span className="eyebrow">마음에 드는 부분만 쏙!</span><h1>사진을 예쁘게 맞춰요</h1><p>한 손가락으로 옮기고, 두 손가락으로 크게 만들어요.</p></div><ImageEditor image={image} difficulty={difficulty} onConfirm={start} onCancel={() => setImage(null)}><DifficultySelector value={difficulty} onChange={setDifficulty}/></ImageEditor><p className="privacy-note"><Icon name="shield" size={16}/>사진은 서버로 전송되지 않고 이 기기에서만 사용됩니다.</p></main>;
   return <main className="home-main">
     <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="tiny-flower">✿</span>우리 아이의 첫 번째 사진 퍼즐</span>
