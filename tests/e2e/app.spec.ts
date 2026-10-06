@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+declare global { interface Window { puzzleSounds: string[] } }
 const root = '/gogogo/';
 async function prepare(page: Page, count = 12) {
   await page.goto(root);
@@ -16,15 +17,21 @@ async function revealPiece(page: Page, id: string) {
   for(let i=0;i<4 && !(await piece.isVisible());i++) await page.getByRole('button',{name:'다음 조각'}).click();
   await expect(piece).toBeVisible();
 }
-async function tapPlace(page: Page, id: string) {
+async function tapPlace(page: Page, id: string, targetId=id) {
   await revealPiece(page,id);
   if (await page.evaluate(()=>navigator.maxTouchPoints>0)) {
     await page.locator(`[data-piece-id="${id}"]`).tap();
-    await page.locator(`[data-target-id="${id}"]`).tap();
+    await page.locator(`[data-target-id="${targetId}"]`).tap();
   } else {
     await page.locator(`[data-piece-id="${id}"]`).click();
-    await page.locator(`[data-target-id="${id}"]`).click();
+    await page.locator(`[data-target-id="${targetId}"]`).click();
   }
+}
+async function returnPlaced(page: Page, cellId: string) {
+  const cell=page.locator(`[data-target-id="${cellId}"]`);
+  if(await page.evaluate(()=>navigator.maxTouchPoints>0)) {
+    await cell.tap();await cell.tap();
+  } else await cell.dblclick({delay:80});
 }
 test('Pages assets, install metadata and offline cache are complete', async ({ page, request }, info) => {
   const errors: string[] = [], failed: string[] = [];
@@ -52,37 +59,57 @@ test('Pages assets, install metadata and offline cache are complete', async ({ p
   await page.screenshot({path:`test-results/home-${info.project.name}.png`,fullPage:true});
   expect(errors).toEqual([]);expect(failed).toEqual([]);
 });
-for(const count of [12,16,20,24]) test(`${count} pieces: wrong target, guide, progressive hints, completion and persisted records`,async({page},info)=>{
-  const failed: string[]=[];
+for(const count of [12,16,20,24]) test(`${count} pieces: free placement, whole-board challenge, return, retry and persisted records`,async({page},info)=>{
+  const failed: string[]=[], uploads: string[]=[];
   page.on('response',r=>{if(r.status()>=400)failed.push(r.url());});
-  const uploads: string[]=[];
   page.on('request',r=>{if(!['GET','HEAD'].includes(r.method()))uploads.push(r.method()+' '+r.url());});
+  await page.addInitScript(()=>{
+    Object.defineProperty(window,'puzzleSounds',{value:[],configurable:true});
+    HTMLMediaElement.prototype.play=function(){
+      (window as Window & {puzzleSounds:string[]}).puzzleSounds.push(this.src);
+      return Promise.resolve();
+    };
+  });
   await prepare(page,count);
-  expect(await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.every((node,i)=>{
-    const box=node.getBoundingClientRect(),slot=node.parentElement!.getBoundingClientRect();
-    const next=nodes[i+1]?.getBoundingClientRect();
-    return box.width<=slot.width+1 && (!next || Math.abs(next.y-box.y)>2 || box.right<=next.left+1);
-  }))).toBe(true);
+  await expect(page.getByRole('button',{name:'도전!',exact:true})).toBeDisabled();
   const pieces=await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
-  await page.locator(`[data-piece-id="${pieces[0]}"]`).click();
-  await page.locator(`[data-target-id="${pieces[1]}"]`).click();
-  await expect(page.locator('.board-cell.locked')).toHaveCount(0);
+  // Both incorrect positions are accepted with the same neutral appearance.
+  await tapPlace(page,pieces[0],pieces[1]);
+  await expect(page.locator(`[data-target-id="${pieces[1]}"]`)).toHaveAttribute('data-placed-piece-id',pieces[0]);
+  await expect(page.locator('.board-cell.occupied')).toHaveCount(1);
+  await expect(page.locator('.board-cell:disabled')).toHaveCount(0);
+  await tapPlace(page,pieces[1],pieces[0]);
+  for(const id of pieces.slice(2)) await tapPlace(page,id);
+  await expect(page.locator('.board-cell.occupied')).toHaveCount(count);
+  await expect(page.locator('.puzzle-piece')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toHaveCount(0);
+  expect(await page.evaluate(()=>(window as Window & {puzzleSounds:string[]}).puzzleSounds)).toEqual([]);
+  const before=await page.locator('.board-cell').evaluateAll(nodes=>nodes.map(n=>({piece:n.getAttribute('data-placed-piece-id'),className:n.className,disabled:(n as HTMLButtonElement).disabled})));
+  await page.getByRole('button',{name:'도전!',exact:true}).click();
+  await expect(page.getByText('조각을 살펴보고 다시 도전해요!',{exact:true})).toBeVisible();
+  expect(await page.locator('.board-cell').evaluateAll(nodes=>nodes.map(n=>({piece:n.getAttribute('data-placed-piece-id'),className:n.className,disabled:(n as HTMLButtonElement).disabled})))).toEqual(before);
+  await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toHaveCount(0);
+  expect(await page.evaluate(()=>(window as Window & {puzzleSounds:string[]}).puzzleSounds)).toEqual([]);
+  await page.getByRole('button',{name:'다시 도전!',exact:true}).click();
+  await expect(page.locator('.board-cell:disabled')).toHaveCount(0);
   await page.getByRole('button',{name:'원본 보기'}).click();await expect(page.locator('.original-guide')).toBeVisible();
   await page.getByRole('button',{name:'원본 보기'}).click();await expect(page.locator('.original-guide')).toHaveCount(0);
   await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.original-guide')).toBeVisible();
   await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.hint-piece')).toHaveCount(1);
-  await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.hint-target')).toHaveCount(1);
-  // Real mouse pointer capture and release; touch project also checks native touch tap placement below.
-  const first=page.locator(`[data-piece-id="${pieces[0]}"]`),target=page.locator(`[data-target-id="${pieces[0]}"]`);
-  await first.scrollIntoViewIfNeeded();const sourceRect=(await first.boundingBox())!,targetRect=(await target.boundingBox())!;
-  await page.mouse.move(sourceRect.x+sourceRect.width/2,sourceRect.y+sourceRect.height/2);await page.mouse.down();
-  await page.mouse.move(targetRect.x+targetRect.width/2,targetRect.y+targetRect.height/2,{steps:12});await page.mouse.up();
-  await expect(page.locator('.board-cell.locked')).toHaveCount(1);
+  await page.getByRole('button',{name:'힌트',exact:true}).click();await expect(page.locator('.original-guide')).toBeVisible();
+  // Double click/tap returns even a correct piece, not only incorrect pieces.
+  await returnPlaced(page,pieces[2]);await expect(page.locator(`[data-piece-id="${pieces[2]}"]`)).toBeVisible();
+  await tapPlace(page,pieces[2]);
+  await returnPlaced(page,pieces[1]);await returnPlaced(page,pieces[0]);
+  await expect(page.getByRole('button',{name:'다시 도전!',exact:true})).toBeDisabled();
+  await tapPlace(page,pieces[0]);await tapPlace(page,pieces[1]);
+  await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toHaveCount(0);
   await page.screenshot({path:`test-results/playing-${count}-${info.project.name}.png`,fullPage:true});
-  for(const id of pieces.slice(1)) await tapPlace(page,id);
+  await page.getByRole('button',{name:'다시 도전!',exact:true}).click();
   await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toBeVisible();
   await expect(page.getByText('이 기기에 기록을 저장했어요.')).toBeVisible();
   await expect(page.getByText('힌트 3번',{exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>(window as Window & {puzzleSounds:string[]}).puzzleSounds.length)).toBe(1);
   await page.screenshot({path:`test-results/complete-${count}-${info.project.name}.png`});
   await page.getByRole('link',{name:'기록 보기',exact:true}).click();
   await expect(page.locator('.record-row')).toHaveCount(1);
@@ -92,6 +119,18 @@ for(const count of [12,16,20,24]) test(`${count} pieces: wrong target, guide, pr
   await page.getByRole('button',{name:'기록 삭제',exact:true}).click();await page.getByRole('button',{name:'모두 지우기'}).click();
   await expect(page.locator('.record-row')).toHaveCount(0);await page.reload();await expect(page.locator('.record-row')).toHaveCount(0);
   expect(failed).toEqual([]);expect(uploads).toEqual([]);
+});
+test('keyboard selection, free placement and return work without dragging',async({page})=>{
+  await prepare(page);
+  const piece=page.locator('.puzzle-piece').first(),id=(await piece.getAttribute('data-piece-id'))!;
+  await piece.focus();await page.keyboard.press('Enter');
+  await expect(piece).toHaveAttribute('aria-pressed','true');
+  const target=page.locator('[data-target-id]').first();
+  await target.focus();await page.keyboard.press('Space');
+  await expect(target).toHaveAttribute('data-placed-piece-id',id);
+  await page.keyboard.press('Delete');
+  await expect(target).not.toHaveAttribute('data-placed-piece-id',id);
+  await expect(page.locator(`[data-piece-id="${id}"]`)).toBeVisible();
 });
 test('local photo processing, crop, rotation, cancel and reload recovery',async({page})=>{
   await page.goto(root);
@@ -151,7 +190,10 @@ test('offline launch, local file selection, play and IndexedDB work without a ne
   await page.getByRole('button',{name:'붙이러 고고고!'}).click();await expect(page.locator('.puzzle-piece')).toHaveCount(12);
   const ids=await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
   for(const id of ids) await tapPlace(page,id);
-  await expect(page.getByText('이 기기에 기록을 저장했어요.')).toBeVisible();await page.getByRole('link',{name:'기록 보기',exact:true}).click();await page.reload();await expect(page.locator('.record-row')).toHaveCount(1);
+  await page.getByRole('button',{name:'도전!',exact:true}).click();
+  await expect(page.getByText('이 기기에 기록을 저장했어요.')).toBeVisible();await page.getByRole('link',{name:'기록 보기',exact:true}).click();
+  await expect(page).toHaveURL(/\/gogogo\/records\/$/);await expect(page.locator('.record-row')).toHaveCount(1);
+  await page.reload();await expect(page.locator('.record-row')).toHaveCount(1);
   const cached=await page.evaluate(async()=>{const keys=await caches.keys();const lists=await Promise.all(keys.map(async k=>(await(await caches.open(k)).keys()).map(r=>r.url)));return lists.flat();});
   expect(cached.every(url=>url.startsWith('http://127.0.0.1:4173/gogogo/'))).toBe(true);expect(cached.some(url=>url.startsWith('blob:'))).toBe(false);
 });
@@ -164,9 +206,10 @@ test('sound preference persists and optional browser features fail gracefully',a
   await page.getByRole('button',{name:'소리 켜기'}).click();await prepare(page);
   const ids=await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
   for(const id of ids) await tapPlace(page,id);
-  await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toBeVisible();await page.getByRole('button',{name:'다시 하기'}).click();await expect(page.locator('.puzzle-piece')).toHaveCount(12);await expect(page.locator('.board-cell.locked')).toHaveCount(0);
+  await page.getByRole('button',{name:'도전!',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toBeVisible();await page.getByRole('button',{name:'다시 하기'}).click();await expect(page.locator('.puzzle-piece')).toHaveCount(12);await expect(page.locator('.board-cell.occupied')).toHaveCount(0);
 });
-test('native touch drag, pointer cancellation, pinch zoom and viewport changes',async({page,context},info)=>{
+test('native taps, double taps, pinch zoom and viewport changes',async({page,context},info)=>{
   test.skip(info.project.name!=='touch','Requires native touch emulation');
   await page.goto(root);await page.getByRole('button',{name:'샘플 퍼즐 해보기'}).click();
   const cdp=await context.newCDPSession(page);
@@ -177,27 +220,31 @@ test('native touch drag, pointer cancellation, pinch zoom and viewport changes',
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await expect.poll(async()=>Number(await page.getByRole('slider').inputValue())).toBeGreaterThan(1.5);
   await page.getByRole('button',{name:'붙이러 고고고!'}).tap();
-  const piece=page.locator('.puzzle-piece').first(),id=await piece.getAttribute('data-piece-id');
-  await piece.scrollIntoViewIfNeeded();const p=(await piece.boundingBox())!,t=(await page.locator(`[data-target-id="${id}"]`).boundingBox())!;
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x+p.width/2,y:p.y+p.height/2,id:1}]});
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:t.x+t.width/2,y:t.y+t.height/2,id:1}]});
+  const piece=page.locator('.puzzle-piece').first(),id=(await piece.getAttribute('data-piece-id'))!;
+  const target=page.locator(`[data-target-id="${await page.locator('[data-target-id]').first().getAttribute('data-target-id')}"]`);
+  async function nativeTap(locator: ReturnType<typeof page.locator>) {
+    await locator.scrollIntoViewIfNeeded();const box=(await locator.boundingBox())!;
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:box.x+box.width/2,y:box.y+box.height/2,id:1}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  }
+  await nativeTap(piece);await expect(piece).toHaveAttribute('aria-pressed','true');
+  await nativeTap(target);await expect(target).toHaveAttribute('data-placed-piece-id',id);
+  await nativeTap(target);await nativeTap(target);
+  await expect(page.locator('.board-cell.occupied')).toHaveCount(0);
+  await expect(page.locator(`[data-piece-id="${id}"]`)).toBeVisible();
+  await piece.scrollIntoViewIfNeeded();const box=(await piece.boundingBox())!;
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:box.x+box.width/2,y:box.y+box.height/2,id:1}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:box.x+box.width/2,y:box.y+box.height/2-35,id:1}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
-  await expect(page.locator('.drag-overlay')).toHaveCount(0);await expect(page.locator('.board-cell.locked')).toHaveCount(0);
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x+p.width/2,y:p.y+p.height/2,id:1}]});
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:t.x+t.width/2,y:t.y+t.height/2,id:1}]});
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  await expect(page.locator('.board-cell.locked')).toHaveCount(1);
-  await page.setViewportSize({width:740,height:390});await expect(page.locator('.board-cell.locked')).toHaveCount(1);
+  await expect(page.locator('.board-cell.occupied')).toHaveCount(0);
+  await tapPlace(page,id);await expect(page.locator('.board-cell.occupied')).toHaveCount(1);
+  await page.setViewportSize({width:740,height:390});await expect(page.locator('.board-cell.occupied')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.setViewportSize({width:320,height:640});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  // The compact tray keeps a bottom piece and its target visible on a short phone.
-  const last=page.locator('.puzzle-piece').last(),lastId=await last.getAttribute('data-piece-id');await revealPiece(page,lastId!);await last.scrollIntoViewIfNeeded();
-  const lastBox=(await last.boundingBox())!,lastTarget=(await page.locator(`[data-target-id="${lastId}"]`).boundingBox())!;
-  expect(lastTarget.y).toBeGreaterThanOrEqual(0);
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:lastBox.x+lastBox.width/2,y:lastBox.y+lastBox.height/2,id:1}]});
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:lastTarget.x+lastTarget.width/2,y:lastTarget.y+lastTarget.height/2,id:1}]});
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  await expect(page.locator('.board-cell.locked')).toHaveCount(2);
+  await page.setViewportSize({width:320,height:640});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  const lastId=(await page.locator('.puzzle-piece').last().getAttribute('data-piece-id'))!;
+  await tapPlace(page,lastId);await expect(page.locator('.board-cell.occupied')).toHaveCount(2);
+  await returnPlaced(page,lastId);await expect(page.locator(`[data-piece-id="${lastId}"]`)).toBeVisible();
   await cdp.detach();
 });
 test('IndexedDB failure preserves a cheerful completed puzzle',async({page})=>{
@@ -205,6 +252,7 @@ test('IndexedDB failure preserves a cheerful completed puzzle',async({page})=>{
   await prepare(page);
   const ids=await page.locator('.puzzle-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
   for(const id of ids) await tapPlace(page,id);
+  await page.getByRole('button',{name:'도전!',exact:true}).click();
   await expect(page.getByRole('heading',{name:'퍼즐 완성!'})).toBeVisible();
   await expect(page.getByText('퍼즐은 완성했어요!',{exact:false})).toBeVisible();
 });
@@ -230,7 +278,10 @@ test('phone tray paging, hint navigation and reachable editor actions',async({pa
   await expect(page.locator('.hint-piece')).toBeVisible();await expect(page.locator('.tray-page-count')).toContainText('1');
   const ids=await page.locator('.puzzle-piece:visible').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-piece-id')!));
   for(const id of ids) await tapPlace(page,id);
-  await expect(page.locator('.board-cell.locked')).toHaveCount(6);await expect(page.locator('.tray-page-count')).toContainText('2');
+  await expect(page.locator('.board-cell.occupied')).toHaveCount(6);await expect(page.locator('.tray-page-count')).toContainText('2');
   await expect(page.locator('.puzzle-piece:visible')).toHaveCount(6);
   await page.screenshot({path:'test-results/paged-tray-phone.png',fullPage:true});
+  await returnPlaced(page,ids[0]);
+  await expect(page.locator('.tray-page-count')).toContainText('1');
+  await expect(page.locator(`[data-piece-id="${ids[0]}"]`)).toBeVisible();
 });

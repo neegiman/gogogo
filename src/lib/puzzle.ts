@@ -1,10 +1,10 @@
-import { DIFFICULTIES, type Difficulty, type PuzzlePiece } from '@/types/puzzle';
+import { DIFFICULTIES, type Difficulty, type PuzzlePiece, type PiecePlacements } from '@/types/puzzle';
 export function createPieces(difficulty: Difficulty): PuzzlePiece[] {
   const { cols, rows } = DIFFICULTIES.find(d => d.count === difficulty)!;
   return Array.from({ length: difficulty }, (_, i) => ({
     id: `piece-${i}`, row: Math.floor(i / cols), col: i % cols,
     correctX: (i % cols) / cols, correctY: Math.floor(i / cols) / rows,
-    width: 1 / cols, height: 1 / rows, locked: false,
+    width: 1 / cols, height: 1 / rows,
   }));
 }
 export function shufflePieces<T>(items: T[], random = Math.random): T[] {
@@ -16,6 +16,13 @@ export function shufflePieces<T>(items: T[], random = Math.random): T[] {
   if (result.length > 1 && result.every((p, i) => p === items[i])) result.push(result.shift()!);
   return result;
 }
-export function canSnap(x: number, y: number, targetX: number, targetY: number, width: number, height: number) {
-  return Math.hypot((x - targetX) / width, (y - targetY) / height) <= 0.48;
+export function placePiece(placements: PiecePlacements, pieceId: string, cellId: string): PiecePlacements {
+  if (placements[cellId]) return placements;
+  return { ...returnPiece(placements, pieceId), [cellId]: pieceId };
+}
+export function returnPiece(placements: PiecePlacements, pieceId: string): PiecePlacements {
+  return Object.fromEntries(Object.entries(placements).filter(([, id]) => id !== pieceId));
+}
+export function isPuzzleComplete(pieces: PuzzlePiece[], placements: PiecePlacements): boolean {
+  return Object.keys(placements).length === pieces.length && pieces.every(piece => placements[piece.id] === piece.id);
 }

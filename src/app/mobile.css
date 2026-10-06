@@ -102,3 +102,30 @@
   .tray-area .tray-page-button { min-height: 44px; }
   .puzzle-toolbar { grid-row: 6; }
 }
+
+/* Tap to arrange, then evaluate the complete board in one challenge. */
+.board-cell.occupied { border: 0; opacity: 1; animation: piece-pop .2s ease; }
+.board-cell.selected { outline: 3px solid var(--primary); outline-offset: -3px !important; z-index: 1; }
+.board-cell.hint-piece { outline: 3px solid #e0b757; outline-offset: -3px !important; animation: gentle-glow .65s ease-in-out infinite alternate; }
+.board-instructions { color: var(--muted); font-size: 11px; line-height: 1.7; text-align: center; margin: 8px 0 0; }
+.tray-slot.placed-slot { background: #f4d8e4; color: var(--muted); font-size: 10px; }
+.puzzle-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 8px; }
+.toolbar-guides { display: flex; gap: 10px; }
+.toolbar-guides .button { flex: 1; }
+.puzzle-toolbar .challenge-button { min-height: 56px; width: 100%; font-size: 17px; }
+.challenge-button:disabled { background: #f1dae5; color: #987186; opacity: 1; box-shadow: none; }
+.challenge-help { color: var(--muted); font-size: 10px; text-align: center; }
+@media (max-width: 600px) {
+  .puzzle-toolbar { padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  .toolbar-guides .button { min-height: 44px; font-size: 13px; }
+  .puzzle-board { width: min(100%, 36svh, 340px); }
+  .tray-heading { margin-top: 12px; }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .puzzle-board { position: sticky; top: 8px; z-index: 2; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .board-instructions { grid-column: 1; grid-row: 7; margin: 0; }
+  .puzzle-toolbar .challenge-button { min-height: 48px; }
+  .toolbar-guides .button { min-height: 44px; }
+}
