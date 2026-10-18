@@ -6,6 +6,7 @@ const LINE_CLEAR_DURATION = 1100;
 let state = newGame(), best = 0, selected = -1, sound = false, audio, drag, previewIndex = -1;
 let resolvingMove = false;
 let centerLayout = false, unpinnedScrollY = 0;
+let viewportFrame = 0;
 let selectedAnchor = [0, 0];
 let history = [], feedbackTimer, celebrationTimer;
 let storageNoteShown = false, suppressPieceClickUntil = 0;
@@ -375,14 +376,55 @@ function updateSoundButton() {
   $('sound-button').setAttribute('aria-pressed', String(sound));
   $('sound-button').innerHTML = `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="${sound ? 'M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14' : 'm16 9 5 6m0-6-5 6'}"/></svg>`;
 }
+
+// Mobile browser bars can make the visible area differ from both vh and svh.
+// Only viewport events update these values; game feedback never moves the card.
+function updatePlayViewport() {
+  if (!centerLayout) return;
+  const viewport = window.visualViewport;
+  // Let native pinch zoom enlarge and pan the page without resizing it back.
+  if (viewport && Math.abs(viewport.scale - 1) > .01) return;
+  const dimensions = {
+    width: viewport?.width ?? window.innerWidth,
+    height: viewport?.height ?? window.innerHeight,
+    x: viewport?.offsetLeft ?? 0,
+    y: viewport?.offsetTop ?? 0,
+  };
+  const style = document.documentElement.style;
+  for (const [name, value] of Object.entries(dimensions)) {
+    const property = `--play-viewport-${name}`, pixels = `${Math.round(value * 100) / 100}px`;
+    if (style.getPropertyValue(property) !== pixels) style.setProperty(property, pixels);
+  }
+}
+function schedulePlayViewport() {
+  if (!centerLayout || viewportFrame) return;
+  viewportFrame = requestAnimationFrame(() => {
+    viewportFrame = 0;
+    updatePlayViewport();
+  });
+}
+function applyCenterLayout() {
+  document.documentElement.classList.toggle('center-layout', centerLayout);
+  document.body.classList.toggle('center-layout', centerLayout);
+  if (centerLayout) updatePlayViewport();
+  else {
+    cancelAnimationFrame(viewportFrame);
+    viewportFrame = 0;
+    for (const name of ['width', 'height', 'x', 'y']) document.documentElement.style.removeProperty(`--play-viewport-${name}`);
+  }
+}
+window.addEventListener('resize', schedulePlayViewport, { passive: true });
+window.addEventListener('orientationchange', schedulePlayViewport, { passive: true });
+window.visualViewport?.addEventListener('resize', schedulePlayViewport, { passive: true });
+window.visualViewport?.addEventListener('scroll', schedulePlayViewport, { passive: true });
+
 $('sound-button').addEventListener('click', () => { sound = !sound; updateSoundButton(); if (sound) playTone(false); save(); });
 $('center-layout-toggle').addEventListener('change', event => {
   cancelDrag();
   clearPreview();
   if (!centerLayout && event.target.checked) unpinnedScrollY = window.scrollY;
   centerLayout = event.target.checked;
-  document.documentElement.classList.toggle('center-layout', centerLayout);
-  document.body.classList.toggle('center-layout', centerLayout);
+  applyCenterLayout();
   if (!centerLayout) window.scrollTo(0, unpinnedScrollY);
   save();
   announce(centerLayout ? '게임 화면을 가운데 고정했어요. 스크롤 없이 놀아요!' : '화면 고정을 해제했어요.', false, true);
@@ -417,8 +459,7 @@ document.addEventListener('keydown', event => {
 // Recover gracefully from a fully used tray in an older or interrupted saved session.
 if (state.pieces.every(p => !p)) state.pieces = newPieces(state.board);
 $('center-layout-toggle').checked = centerLayout;
-document.documentElement.classList.toggle('center-layout', centerLayout);
-document.body.classList.toggle('center-layout', centerLayout);
+applyCenterLayout();
 render();
 announce(defaultMessage());
 save();
