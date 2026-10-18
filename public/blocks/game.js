@@ -1,4 +1,4 @@
-import { SIZE, COLORS, SHAPES, getPieceAnchor, resolvePlacement, hasPlace, newPieces, newGame, placePiece, isValidState } from './core.js';
+import { SIZE, COLORS, SHAPES, getPieceAnchor, resolvePlacement, hasPlace, newPieces, newGame, placePiece, isValidState } from './core.js?v=e95dbecd1d24';
 
 const $ = id => document.getElementById(id);
 const SAVE_KEY = 'mallang-blocks:v1';
