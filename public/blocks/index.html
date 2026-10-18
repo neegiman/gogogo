@@ -7,8 +7,8 @@
   <meta name="description" content="시간제한 없이, 알록달록한 블록을 놓으며 생각이 자라는 어린이 블록 놀이터. 터치와 마우스로 편하게 즐겨요.">
   <title>말랑 블록 · 작은 생각이 자라는 놀이터</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
-  <link rel="stylesheet" href="./style-db938af601e5.css">
-  <script type="module" src="./game-280266b4616b.js"></script>
+  <link rel="stylesheet" href="./style-f9f143a7a9e2.css">
+  <script type="module" src="./game-47d92f2e9285.js"></script>
 </head>
 <body class="center-layout">
   <div class="page-shell">
@@ -17,7 +17,7 @@
       <div class="header-actions">
         <a class="return-link" href="../" aria-label="고고고 놀이 메뉴로 돌아가기">← 놀이 메뉴</a>
         <button id="sound-button" class="icon-button" type="button" aria-label="소리 켜기" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Zm5 4 5 6m0-6-5 6"/></svg></button>
-        <button id="help-button" class="help-button" type="button"><span aria-hidden="true">?</span>놀이 방법</button>
+        <button id="help-button" class="help-button" type="button"><span aria-hidden="true">?</span>어떻게 놀까?</button>
       </div>
     </header>
 
@@ -30,12 +30,16 @@
       <div class="play-layout">
         <section class="game-card" aria-labelledby="board-title">
           <div class="game-topline"><div class="section-label"><span class="little-squares" aria-hidden="true">▦</span><h2 id="board-title">블록 놀이터</h2></div><span class="difficulty"><span></span>8 × 8 · 자유 놀이</span><span id="center-score" class="center-score">0점</span></div>
-          <div class="view-options"><label class="center-option"><input id="center-layout-toggle" type="checkbox" aria-controls="board piece-tray" checked><span>게임 화면 가운데 고정</span></label></div>
+          <div class="view-options"><label class="center-option"><input id="center-layout-toggle" type="checkbox" aria-controls="board piece-tray" aria-labelledby="center-layout-label" aria-describedby="center-layout-help" checked><svg class="center-option-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 3h8l-1 7 4 4H5l4-4-1-7Zm4 11v7"/></svg><span class="center-option-copy"><strong id="center-layout-label">화면 딱 붙이기</strong><small id="center-layout-help">화면이 움직이지 않아요</small></span></label></div>
           <div class="board-wrap"><div id="board" class="board" role="group" aria-label="8줄 8칸 블록 놀이터"></div><div id="celebration" class="celebration" aria-hidden="true"></div></div>
           <p id="game-message" class="game-message" role="status" aria-live="polite"><span aria-hidden="true">☝</span> 블록을 골라, 빈칸에 놓아 보세요!</p>
           <div class="tray-heading"><h3>나의 블록</h3><span>골라서 톡! 또는 끌어 놓아요</span></div>
           <div id="piece-tray" class="piece-tray" role="group" aria-label="놓을 블록 고르기"></div>
-          <div class="game-controls"><button id="undo-button" class="control-button" type="button" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5-5 5 5 5M3 10h11a6 6 0 0 1 0 12"/></svg>한 수 뒤로</button><button id="shuffle-button" class="control-button" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4M4 7h16M8 13l-4 4 4 4m12-4H4"/></svg>다른 블록</button><button id="restart-button" class="control-button" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></svg>새로 시작</button></div>
+          <div class="game-controls">
+            <button id="undo-button" class="control-button control-button--undo" type="button" aria-labelledby="undo-label" aria-describedby="undo-help" disabled><span class="control-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 5-5 5 5 5M4 10h9a6 6 0 0 1 0 12"/></svg></span><span id="undo-label" class="control-label">앗, 다시!</span><span id="undo-help" class="control-help">먼저 놓아봐요</span></button>
+            <button id="shuffle-button" class="control-button control-button--shuffle" type="button" aria-labelledby="shuffle-label" aria-describedby="shuffle-help"><span class="control-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 9h18v4H3zM5 13v8h14v-8M12 9v12M12 9C5 9 4 6 6 4s6 2 6 5Zm0 0c7 0 8-3 6-5s-6 2-6 5Z"/></svg></span><span id="shuffle-label" class="control-label">새 블록 받기</span><span id="shuffle-help" class="control-help">아래 블록 바꾸기</span></button>
+            <button id="restart-button" class="control-button control-button--restart" type="button" aria-labelledby="restart-label" aria-describedby="restart-help"><span class="control-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21v-8M12 16C5 16 3 11 4 7c6 0 8 3 8 9Zm0-3c0-6 4-9 8-9 1 6-3 9-8 9ZM7 21h10"/></svg></span><span id="restart-label" class="control-label">처음부터 놀기</span><span id="restart-help" class="control-help">놀이판 비우기</span></button>
+          </div>
         </section>
 
         <aside class="side-panel" aria-label="나의 놀이 기록과 도움말">
@@ -50,8 +54,8 @@
       <footer><span class="footer-flower" aria-hidden="true">✿</span> 작은 도전이 모여, 커다란 자신감이 돼요.<span class="footer-meta">말랑 블록 · 즐겁게 생각하기</span></footer>
     </main>
   </div>
-  <dialog id="help-dialog" class="modal"><button class="modal-x" type="button" data-close aria-label="도움말 닫기">×</button><div class="modal-emoji" aria-hidden="true">🧩</div><h2>함께 블록을 놓아 볼까요?</h2><p>블록을 고른 뒤 놀이터의 빈칸을 눌러요.<br>놓을 수 있는 위치를 그림자로 보여 줘요.</p><p>블록의 어느 칸이든 잡아서 옮겨도 좋아요.<br>ㄴ자 블록은 꺾인 모서리를 기준으로 놓여요.</p><p>가로나 세로를 채우면 줄이 반짝이며 사라져요.<br>세 줄마다 정원에 꽃 한 송이가 피어요!</p><div class="help-tip">막힐 땐 <strong>다른 블록</strong>, 실수했을 땐 <strong>한 수 뒤로</strong>.<br>키보드: 1·2·3으로 블록 선택 → Tab으로 놀이터 이동 → 방향키로 칸 이동 → Enter로 놓기.</div><button class="primary-button" type="button" data-close>좋아, 놀러 가자!</button></dialog>
-  <dialog id="restart-dialog" class="modal"><div class="modal-emoji" aria-hidden="true">🌱</div><h2>새로운 놀이터를 열까요?</h2><p>지금 놀이터와 점수는 처음으로 돌아가요.<br>최고 기록은 그대로 간직할게요.</p><div class="modal-actions"><button class="secondary-button" type="button" data-close>계속 놀기</button><button id="confirm-restart" class="primary-button" type="button">새로 시작</button></div></dialog>
+  <dialog id="help-dialog" class="modal"><button class="modal-x" type="button" data-close aria-label="도움말 닫기">×</button><div class="modal-emoji" aria-hidden="true">🧩</div><h2>함께 블록을 놓아 볼까요?</h2><p>블록을 고른 뒤 놀이터의 빈칸을 눌러요.<br>놓을 수 있는 위치를 그림자로 보여 줘요.</p><p>블록의 어느 칸이든 잡아서 옮겨도 좋아요.<br>ㄴ자 블록은 꺾인 모서리를 기준으로 놓여요.</p><p>가로나 세로를 채우면 줄이 반짝이며 사라져요.<br>세 줄마다 정원에 꽃 한 송이가 피어요!</p><div class="help-tip">막히면 <strong>새 블록 받기</strong>를 눌러요.<br>실수하면 <strong>앗, 다시!</strong>로 돌아가요.<br>키보드: 1·2·3으로 블록 선택 → Tab으로 놀이터 이동 → 방향키로 칸 이동 → Enter로 놓기.</div><button class="primary-button" type="button" data-close>좋아, 놀러 가자!</button></dialog>
+  <dialog id="restart-dialog" class="modal" aria-labelledby="restart-title" aria-describedby="restart-description"><div class="modal-emoji" aria-hidden="true">🌱</div><h2 id="restart-title">처음부터 다시 놀까요?</h2><p id="restart-description">놓아 둔 블록을 모두 치우고<br>점수는 0점부터 시작해요.<br>가장 높은 점수는 남아 있어요!</p><div class="modal-actions"><button class="secondary-button" type="button" data-close>아니, 계속 놀래요</button><button id="confirm-restart" class="primary-button" type="button">응! 처음부터</button></div></dialog>
   <div id="drag-piece" class="drag-piece" aria-hidden="true" hidden></div>
 </body>
 </html>

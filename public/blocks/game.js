@@ -46,7 +46,7 @@ function announce(message, success = false, temporary = false) {
   if (temporary) feedbackTimer = setTimeout(() => announce(defaultMessage()), 3500);
 }
 function defaultMessage() {
-  if (!state.pieces.some(p => p && hasPlace(state.board, p))) return '괜찮아요! ‘다른 블록’을 누르면 계속 놀 수 있어요.';
+  if (!state.pieces.some(p => p && hasPlace(state.board, p))) return '괜찮아요! ‘새 블록 받기’를 눌러 보세요.';
   return selected >= 0 ? '빈칸에 가져가 보세요. 그림자 모양대로 놓여요!' : '☝ 블록을 골라, 빈칸에 놓아 보세요!';
 }
 
@@ -190,6 +190,7 @@ function render() {
   $('lines').textContent = state.lines;
   $('best').textContent = best.toLocaleString('ko-KR');
   $('undo-button').disabled = history.length === 0;
+  $('undo-help').textContent = history.length ? '방금 전으로' : '먼저 놓아봐요';
   const flowers = Math.floor(state.lines / 3), progress = state.lines % 3;
   $('garden-count').textContent = flowers ? `꽃 ${flowers}송이` : `씨앗 ${progress} / 3`;
   $('garden').classList.toggle('bloomed', flowers > 0);
@@ -410,6 +411,7 @@ function schedulePlayViewport() {
 function applyCenterLayout() {
   document.documentElement.classList.toggle('center-layout', centerLayout);
   document.body.classList.toggle('center-layout', centerLayout);
+  $('center-layout-help').textContent = centerLayout ? '화면이 움직이지 않아요' : '위아래로 움직일 수 있어요';
   if (centerLayout) updatePlayViewport();
   else {
     cancelAnimationFrame(viewportFrame);
@@ -431,18 +433,18 @@ $('center-layout-toggle').addEventListener('change', event => {
   applyCenterLayout();
   if (!centerLayout) window.scrollTo(0, unpinnedScrollY);
   save();
-  announce(centerLayout ? '게임 화면을 가운데 고정했어요. 스크롤 없이 놀아요!' : '화면 고정을 해제했어요.', false, true);
+  announce(centerLayout ? '딱 붙었어요! 화면이 움직이지 않아요.' : '이제 화면을 위아래로 움직일 수 있어요.', false, true);
 });
 $('undo-button').addEventListener('click', () => {
   if (resolvingMove || !history.length) return;
   state = history.pop(); selected = -1;
   clearTimeout(celebrationTimer); $('celebration').replaceChildren();
-  render(); save(); announce('괜찮아요, 한 수 뒤로! 다시 놓아 볼까요?', false, true);
+  render(); save(); announce('방금 전으로 돌아왔어요. 다시 해 볼까요?', false, true);
 });
 $('shuffle-button').addEventListener('click', () => {
   if (resolvingMove) return;
   snapshot(); state.pieces = newPieces(state.board); selected = -1;
-  render(); save(); announce('새로운 블록이 왔어요! 마음에 드는 블록을 골라요.', false, true);
+  render(); save(); announce('짜잔! 새 블록이에요. 하나를 골라요!', false, true);
 });
 $('help-button').addEventListener('click', () => $('help-dialog').showModal());
 $('restart-button').addEventListener('click', () => $('restart-dialog').showModal());
