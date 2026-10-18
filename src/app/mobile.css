@@ -1,4 +1,12 @@
 /* Brand and touch-first refinements. Imported after the shared base styles. */
+@media (max-width: 600px) {
+  .site-header:not(.playing-header) { height: auto; }
+  .header-inner { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'brand sound' 'nav nav'; gap: 0 10px; }
+  .header-inner > .brand { grid-area: brand; }
+  .header-inner > .sound-button { grid-area: sound; }
+  .header-inner > nav { grid-area: nav; margin: 3px 0 0; justify-content: space-between; gap: 8px; }
+  .header-inner > nav .nav-link { flex: 1; justify-content: center; min-height: 44px; font-size: 13px; white-space: nowrap; }
+}
 .brand-wordmark { display: flex; flex-direction: column; gap: 1px; }
 .brand-wordmark b { font-size: 26px; letter-spacing: -1.5px; line-height: 1.05; }
 .brand-wordmark b span { color: #ec84a6; }

@@ -1,5 +1,7 @@
 # 고고고! 사진퍼즐
 
+상단의 **말랑 블록** 메뉴에서 핑크 테마의 어린이 블록 퍼즐도 즐길 수 있습니다. 게임은 `public/blocks/`의 독립적인 정적 페이지이며 사진 업로드·로그인 없이 작동합니다. 블록을 놓고 가로·세로 줄을 완성하며, 모서리 기준 미리보기·되돌리기·진행 저장·꽃 보상을 제공합니다. 메뉴에서 게임으로 이동하면 사진 퍼즐의 진행 중 사진은 보관되지 않습니다.
+
 **찍고, 자르고, 붙이고. 고고고!** Camera/gallery → crop → puzzle. Phone layouts show six large pieces at a time with previous/next controls and advance when a tray is completed. Returned pieces fill the earliest empty tray slots, and the app opens their tray page. The editor keeps a large start button at the bottom of the phone screen, with difficulty chosen before starting. Touch controls are at least 44px where practical.
 
 Korean, mobile-first photo puzzles for young children. Built with Next.js App Router, TypeScript, React and browser APIs. The deployed app is static HTML/CSS/JavaScript; there is no API, backend, authentication, analytics or cloud storage.

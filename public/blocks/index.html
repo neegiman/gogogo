@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff6fa">
+  <meta name="description" content="시간제한 없이, 알록달록한 블록을 놓으며 생각이 자라는 어린이 블록 놀이터. 터치와 마우스로 편하게 즐겨요.">
+  <title>말랑 블록 · 작은 생각이 자라는 놀이터</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./game.js"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="말랑 블록 처음 화면"><img src="./favicon.svg" width="36" height="36" alt=""><span>말랑 블록<span class="brand-sub">작은 생각이 자라는 놀이터</span></span></a>
+      <div class="header-actions">
+        <a class="return-link" href="../" aria-label="고고고 놀이 메뉴로 돌아가기">← 놀이 메뉴</a>
+        <button id="sound-button" class="icon-button" type="button" aria-label="소리 켜기" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Zm5 4 5 6m0-6-5 6"/></svg></button>
+        <button id="help-button" class="help-button" type="button"><span aria-hidden="true">?</span>놀이 방법</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div><p class="eyebrow"><span aria-hidden="true">✦</span> 한 칸 한 칸, 생각이 쑥쑥</p><h1 id="page-title">오늘은 어떤 <span>블록</span>을 놓아 볼까?</h1><p class="intro-description">서두르지 않아도 괜찮아. 차근차근, 나만의 속도로 놀아요.</p></div>
+        <div class="no-timer"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6M12 2v3"/></svg><span>시간제한 없이<br><strong>천천히 즐겨요</strong></span></div>
+      </section>
+
+      <div class="play-layout">
+        <section class="game-card" aria-labelledby="board-title">
+          <div class="game-topline"><div class="section-label"><span class="little-squares" aria-hidden="true">▦</span><h2 id="board-title">블록 놀이터</h2></div><span class="difficulty"><span></span>8 × 8 · 자유 놀이</span></div>
+          <div class="board-wrap"><div id="board" class="board" role="group" aria-label="8줄 8칸 블록 놀이터"></div><div id="celebration" class="celebration" aria-hidden="true"></div></div>
+          <p id="game-message" class="game-message" role="status" aria-live="polite"><span aria-hidden="true">☝</span> 블록을 골라, 빈칸에 놓아 보세요!</p>
+          <div class="tray-heading"><h3>나의 블록</h3><span>골라서 톡! 또는 끌어 놓아요</span></div>
+          <div id="piece-tray" class="piece-tray" role="group" aria-label="놓을 블록 고르기"></div>
+          <div class="game-controls"><button id="undo-button" class="control-button" type="button" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5-5 5 5 5M3 10h11a6 6 0 0 1 0 12"/></svg>한 수 뒤로</button><button id="shuffle-button" class="control-button" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4M4 7h16M8 13l-4 4 4 4m12-4H4"/></svg>다른 블록</button><button id="restart-button" class="control-button" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></svg>새로 시작</button></div>
+        </section>
+
+        <aside class="side-panel" aria-label="나의 놀이 기록과 도움말">
+          <section class="score-card"><div class="score-top"><span class="section-kicker">오늘의 반짝임</span><svg class="sparkle-icon" aria-hidden="true" viewBox="0 0 40 40"><path d="m20 4 4 12 12 4-12 4-4 12-4-12-12-4 12-4Z"/></svg></div><p class="score"><span id="score">0</span><span>점</span></p><div class="score-bottom"><span>완성한 줄 <strong id="lines">0</strong></span><span>최고 기록 <strong id="best">0</strong></span></div></section>
+
+          <section class="garden-card"><div class="section-label"><h2>나의 작은 정원</h2><span class="garden-badge" id="garden-count">씨앗 0 / 3</span></div><p>세 줄을 완성하면 꽃 한 송이가 피어요.</p><div id="garden" class="garden" role="img" aria-label="아직 꽃이 피지 않은 작은 정원"><svg class="garden-scene" viewBox="0 0 300 140" aria-hidden="true"><ellipse cx="150" cy="119" rx="125" ry="14" fill="#e1eadb"/><path d="M35 115q20-29 44 0M232 115q10-21 27 0" fill="#b9d3b0"/><path d="M77 116v-18m0 7q-19 0-15-13 16 0 15 13m0-4q17-2 15-13-14 1-15 13M223 116V97m0 8q-19 0-15-13 16 0 15 13m0-4q17-2 15-13-14 1-15 13" fill="#9fbd8e" stroke="#9fbd8e" stroke-width="3"/><g id="garden-flower"><path d="M150 117V75" stroke="#81ad7e" stroke-width="5" stroke-linecap="round"/><path d="M149 104q-29-2-24-20 24 0 24 20m3-8q25 0 23-19-24 2-23 19" fill="#a8c99b"/><g id="flower-head" class="flower-head"><g fill="#efa6c5"><ellipse cx="150" cy="55" rx="13" ry="20"/><ellipse cx="150" cy="55" rx="13" ry="20" transform="rotate(72 150 68)"/><ellipse cx="150" cy="55" rx="13" ry="20" transform="rotate(144 150 68)"/><ellipse cx="150" cy="55" rx="13" ry="20" transform="rotate(216 150 68)"/><ellipse cx="150" cy="55" rx="13" ry="20" transform="rotate(288 150 68)"/></g><circle cx="150" cy="68" r="12" fill="#f5d785"/><circle cx="146" cy="67" r="1.5" fill="#8c7554"/><circle cx="154" cy="67" r="1.5" fill="#8c7554"/><path d="M147 72q3 3 6 0" fill="none" stroke="#8c7554" stroke-width="1.5" stroke-linecap="round"/></g></g><path d="m49 53 2-6 2 6 6 2-6 2-2 6-2-6-6-2Zm194-17 2-6 2 6 6 2-6 2-2 6-2-6-6-2Z" fill="#e6cf89"/></svg></div><div class="garden-progress" aria-hidden="true"><span></span><span></span><span></span></div><p id="garden-message" class="garden-caption">첫 번째 꽃을 함께 피워 볼까요?</p></section>
+
+          <section class="howto-card"><p class="section-kicker">이렇게 놀아요</p><ol><li><span class="step-number">1</span><span><strong>마음에 드는 블록을 골라요</strong><small>세 블록 중 하나를 톡!</small></span></li><li><span class="step-number">2</span><span><strong>빈칸에 쏙 놓아요</strong><small>그림자가 보이면 놓을 수 있어요</small></span></li><li><span class="step-number">3</span><span><strong>한 줄을 채우면 반짝!</strong><small>가로도 세로도, 한 줄 가득 채워요</small></span></li></ol></section>
+          <div class="kind-note"><span aria-hidden="true">♡</span><p>조금 틀려도 괜찮아.<br>다시 해 보면 되니까!</p><span class="note-doodle" aria-hidden="true">✧</span></div>
+        </aside>
+      </div>
+      <footer><span class="footer-flower" aria-hidden="true">✿</span> 작은 도전이 모여, 커다란 자신감이 돼요.<span class="footer-meta">말랑 블록 · 즐겁게 생각하기</span></footer>
+    </main>
+  </div>
+  <dialog id="help-dialog" class="modal"><button class="modal-x" type="button" data-close aria-label="도움말 닫기">×</button><div class="modal-emoji" aria-hidden="true">🧩</div><h2>함께 블록을 놓아 볼까요?</h2><p>블록을 고른 뒤 놀이터의 빈칸을 눌러요.<br>놓을 수 있는 위치를 그림자로 보여 줘요.</p><p>블록의 어느 칸이든 잡아서 옮겨도 좋아요.<br>ㄴ자 블록은 꺾인 모서리를 기준으로 놓여요.</p><p>가로나 세로를 채우면 줄이 반짝이며 사라져요.<br>세 줄마다 정원에 꽃 한 송이가 피어요!</p><div class="help-tip">막힐 땐 <strong>다른 블록</strong>, 실수했을 땐 <strong>한 수 뒤로</strong>.<br>키보드: 1·2·3으로 블록 선택 → Tab으로 놀이터 이동 → 방향키로 칸 이동 → Enter로 놓기.</div><button class="primary-button" type="button" data-close>좋아, 놀러 가자!</button></dialog>
+  <dialog id="restart-dialog" class="modal"><div class="modal-emoji" aria-hidden="true">🌱</div><h2>새로운 놀이터를 열까요?</h2><p>지금 놀이터와 점수는 처음으로 돌아가요.<br>최고 기록은 그대로 간직할게요.</p><div class="modal-actions"><button class="secondary-button" type="button" data-close>계속 놀기</button><button id="confirm-restart" class="primary-button" type="button">새로 시작</button></div></dialog>
+  <div id="drag-piece" class="drag-piece" aria-hidden="true" hidden></div>
+</body>
+</html>
