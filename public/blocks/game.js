@@ -5,6 +5,7 @@ const SAVE_KEY = 'mallang-blocks:v1';
 const LINE_CLEAR_DURATION = 1100;
 let state = newGame(), best = 0, selected = -1, sound = false, audio, drag, previewIndex = -1;
 let resolvingMove = false;
+let centerLayout = false, unpinnedScrollY = 0;
 let selectedAnchor = [0, 0];
 let history = [], feedbackTimer, celebrationTimer;
 let storageNoteShown = false, suppressPieceClickUntil = 0;
@@ -16,13 +17,14 @@ try {
     if (isValidState(saved.state)) state = saved.state;
     if (Number.isSafeInteger(saved.best) && saved.best >= 0) best = saved.best;
     sound = saved.sound === true;
+    centerLayout = saved.centerLayout === true;
   }
 } catch { /* Ignore inaccessible or damaged saved data. */ }
 best = Math.max(best, state.score);
 
 function save() {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ version: 1, state, best, sound }));
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ version: 1, state, best, sound, centerLayout }));
   } catch {
     if (!storageNoteShown) {
       storageNoteShown = true;
@@ -179,6 +181,7 @@ function render() {
     $('piece-tray').append(button);
   });
   $('score').textContent = state.score.toLocaleString('ko-KR');
+  $('center-score').textContent = `${state.score.toLocaleString('ko-KR')}점`;
   $('lines').textContent = state.lines;
   $('best').textContent = best.toLocaleString('ko-KR');
   $('undo-button').disabled = history.length === 0;
@@ -376,6 +379,16 @@ function updateSoundButton() {
   $('sound-button').innerHTML = `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="${sound ? 'M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14' : 'm16 9 5 6m0-6-5 6'}"/></svg>`;
 }
 $('sound-button').addEventListener('click', () => { sound = !sound; updateSoundButton(); if (sound) playTone(false); save(); });
+$('center-layout-toggle').addEventListener('change', event => {
+  cancelDrag();
+  clearPreview();
+  if (!centerLayout && event.target.checked) unpinnedScrollY = window.scrollY;
+  centerLayout = event.target.checked;
+  document.body.classList.toggle('center-layout', centerLayout);
+  if (!centerLayout) window.scrollTo(0, unpinnedScrollY);
+  save();
+  announce(centerLayout ? '게임 화면을 가운데 고정했어요. 스크롤 없이 놀아요!' : '화면 고정을 해제했어요.', false, true);
+});
 $('undo-button').addEventListener('click', () => {
   if (resolvingMove || !history.length) return;
   state = history.pop(); selected = -1;
@@ -405,6 +418,8 @@ document.addEventListener('keydown', event => {
 
 // Recover gracefully from a fully used tray in an older or interrupted saved session.
 if (state.pieces.every(p => !p)) state.pieces = newPieces(state.board);
+$('center-layout-toggle').checked = centerLayout;
+document.body.classList.toggle('center-layout', centerLayout);
 render();
 announce(defaultMessage());
 save();
