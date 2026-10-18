@@ -85,7 +85,7 @@ for (let i = 0; i < SIZE * SIZE; i++) {
     const next = i + offsets[event.key];
     if (next < 0 || next >= SIZE * SIZE || (event.key === 'ArrowLeft' && i % SIZE === 0) || (event.key === 'ArrowRight' && i % SIZE === SIZE - 1)) return;
     cells.forEach((c, n) => { c.tabIndex = n === next ? 0 : -1; });
-    cells[next].focus();
+    cells[next].focus({ preventScroll: centerLayout });
   });
   cells.push(cell);
   $('board').append(cell);
@@ -217,9 +217,6 @@ function placeAt(index, anchor = selectedAnchor) {
   const result = placement && placePiece(state, selected, placement.row, placement.col);
   if (!result) {
     announce('여기는 조금 좁아요. 다른 빈칸을 찾아볼까요?', false, true);
-    $('board').classList.remove('shake');
-    void $('board').offsetWidth;
-    $('board').classList.add('shake');
     return;
   }
   // Keep the just-completed lines visible while the saved game already holds
@@ -384,6 +381,7 @@ $('center-layout-toggle').addEventListener('change', event => {
   clearPreview();
   if (!centerLayout && event.target.checked) unpinnedScrollY = window.scrollY;
   centerLayout = event.target.checked;
+  document.documentElement.classList.toggle('center-layout', centerLayout);
   document.body.classList.toggle('center-layout', centerLayout);
   if (!centerLayout) window.scrollTo(0, unpinnedScrollY);
   save();
@@ -419,6 +417,7 @@ document.addEventListener('keydown', event => {
 // Recover gracefully from a fully used tray in an older or interrupted saved session.
 if (state.pieces.every(p => !p)) state.pieces = newPieces(state.board);
 $('center-layout-toggle').checked = centerLayout;
+document.documentElement.classList.toggle('center-layout', centerLayout);
 document.body.classList.toggle('center-layout', centerLayout);
 render();
 announce(defaultMessage());
