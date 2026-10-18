@@ -118,7 +118,7 @@ function showPreview(index) {
   }
   return placement;
 }
-function selectPiece(index, quiet = false, anchor = getPieceAnchor(state.pieces[index])) {
+function selectPiece(index, { quiet = false, anchor = getPieceAnchor(state.pieces[index]), previewFocusedCell = false } = {}) {
   if (resolvingMove || !state.pieces[index]) return;
   selected = index;
   selectedAnchor = anchor;
@@ -129,7 +129,9 @@ function selectPiece(index, quiet = false, anchor = getPieceAnchor(state.pieces[
   });
   if (!quiet) announce(defaultMessage());
   clearPreview();
-  if (document.activeElement?.classList.contains('cell')) showPreview(Number(document.activeElement.dataset.index));
+  // Pointerdown runs before the old board cell loses focus. Reusing it here
+  // briefly paints a preview at a stale position when selecting a tray piece.
+  if (previewFocusedCell && document.activeElement?.classList.contains('cell')) showPreview(Number(document.activeElement.dataset.index));
 }
 
 function grabPoint(index, x, y) {
@@ -173,7 +175,7 @@ function render() {
       number.setAttribute('aria-hidden', 'true');
       button.append(number, blockElement(piece).el);
       button.addEventListener('click', event => {
-        if (performance.now() >= suppressPieceClickUntil) selectPiece(i, false, grabPoint(i, event.clientX, event.clientY).anchor);
+        if (performance.now() >= suppressPieceClickUntil) selectPiece(i, { anchor: grabPoint(i, event.clientX, event.clientY).anchor });
       });
       button.addEventListener('pointerdown', event => startDrag(event, i));
     } else {
@@ -278,7 +280,7 @@ function celebrate(lines) {
 function startDrag(event, index) {
   if (resolvingMove || event.button !== 0) return;
   const grab = grabPoint(index, event.clientX, event.clientY);
-  selectPiece(index, true, grab.anchor);
+  selectPiece(index, { quiet: true, anchor: grab.anchor });
   const origin = event.currentTarget;
   origin.setPointerCapture(event.pointerId);
   drag = { index, ...grab, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, moving: false, target: -1, origin };
@@ -454,7 +456,7 @@ document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click
 document.addEventListener('keydown', event => {
   if (drag) { if (event.key === 'Escape') cancelDrag(); return; }
   if (resolvingMove || document.querySelector('dialog[open]') || event.ctrlKey || event.metaKey || event.altKey) return;
-  if (/^[123]$/.test(event.key)) { event.preventDefault(); selectPiece(Number(event.key) - 1); }
+  if (/^[123]$/.test(event.key)) { event.preventDefault(); selectPiece(Number(event.key) - 1, { previewFocusedCell: true }); }
   if (event.key === 'Escape') { selected = -1; clearPreview(); Array.from($('piece-tray').children).forEach(b => { b.setAttribute('aria-pressed', 'false'); b.querySelectorAll('.anchor-cell').forEach(c => c.classList.remove('anchor-cell')); }); announce(defaultMessage()); }
 });
 
