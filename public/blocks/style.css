@@ -50,6 +50,8 @@ html.center-layout{height:100%;overflow:hidden;overscroll-behavior:none}body.cen
   .center-layout .game-card{--game-board-size:min(430px,calc(var(--play-viewport-height,100dvh) - 150px),calc(var(--play-viewport-width,100vw) - 252px));width:min(760px,calc(var(--play-viewport-width,100vw) - 24px));grid-template-columns:var(--game-board-size) minmax(0,1fr);grid-template-areas:"top options" "board traytitle" "board tray" "board controls" "message message";grid-template-rows:44px 18px minmax(0,1fr) 40px 40px;column-gap:14px}
   .center-layout .view-options{justify-content:flex-end}.center-layout .piece-tray{align-self:center}.center-layout .tray-heading>span{display:none}.center-layout .game-topline .section-label{gap:5px}.center-layout .game-topline h2{font-size:12px}
 }
+/* Keep accidental text drags and iOS long presses from selecting game labels. */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 /* Prevent Safari's double-tap zoom on the controls and surrounding surfaces.
    More-specific board/cell/piece rules keep their existing drag gestures. */
 html,body,.page-shell,.game-card,.modal,button,a,input,label{touch-action:manipulation}
