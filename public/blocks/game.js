@@ -13,6 +13,12 @@ let history = [], feedbackTimer, celebrationTimer;
 let storageNoteShown = false, suppressPieceClickUntil = 0;
 const cells = [];
 
+// Android browsers use contextmenu for long presses. Keep browser menus from
+// interrupting play, alongside the shared CSS text-selection and touch rules.
+document.querySelectorAll('.game-card, .modal').forEach(surface => {
+  surface.addEventListener('contextmenu', event => event.preventDefault());
+});
+
 try {
   const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
   if (saved?.version === 1) {
