@@ -10,7 +10,7 @@ let centerLayout = true, unpinnedScrollY = 0;
 let viewportFrame = 0;
 let selectedAnchor = [0, 0];
 let history = [], feedbackTimer, celebrationTimer;
-let storageNoteShown = false, suppressPieceClickUntil = 0;
+let storageNoteShown = false, suppressPieceClickUntil = 0, suppressBoardClickUntil = 0;
 const cells = [];
 
 // Android browsers use contextmenu for long presses. Keep browser menus from
@@ -53,7 +53,7 @@ function announce(message, success = false, temporary = false) {
 }
 function defaultMessage() {
   if (!state.pieces.some(p => p && hasPlace(state.board, p))) return '괜찮아요! ‘새 블록 받기’를 눌러 보세요.';
-  return selected >= 0 ? '빈칸에 가져가 보세요. 그림자 모양대로 놓여요!' : '☝ 블록을 골라, 빈칸에 놓아 보세요!';
+  return selected >= 0 ? '빈칸을 톡! 또는 꾹 누른 채 끌어 놓아요.' : '☝ 블록을 골라, 빈칸에 놓아 보세요!';
 }
 
 function blockElement(piece, className = 'piece') {
@@ -83,7 +83,13 @@ for (let i = 0; i < SIZE * SIZE; i++) {
   cell.className = 'cell';
   cell.dataset.index = i;
   cell.tabIndex = i === 0 ? 0 : -1;
-  cell.addEventListener('click', () => { if (!drag) placeAt(i); });
+  cell.addEventListener('click', event => {
+    // A board drag already places on pointerup; ignore its following click.
+    if (!drag && (event.detail === 0 || performance.now() >= suppressBoardClickUntil)) placeAt(i);
+  });
+  cell.addEventListener('pointerdown', event => {
+    if (selected >= 0 && state.pieces[selected]) startDrag(event, selected, { fromBoard: true });
+  });
   cell.addEventListener('pointerenter', () => { if (!drag) showPreview(i); });
   cell.addEventListener('focus', () => showPreview(i));
   cell.addEventListener('blur', clearPreview);
@@ -284,17 +290,18 @@ function celebrate(lines) {
   celebrationTimer = setTimeout(() => $('celebration').replaceChildren(), 2000);
 }
 
-function startDrag(event, index) {
-  if (resolvingMove || event.button !== 0) return;
-  const grab = grabPoint(index, event.clientX, event.clientY);
+function startDrag(event, index, { fromBoard = false } = {}) {
+  if (resolvingMove || drag || event.button !== 0 || event.isPrimary === false) return;
+  const grab = fromBoard ? { anchor: [...selectedAnchor], offsetX: .5, offsetY: .5 } : grabPoint(index, event.clientX, event.clientY);
   selectPiece(index, { quiet: true, anchor: grab.anchor });
   const origin = event.currentTarget;
   origin.setPointerCapture(event.pointerId);
-  drag = { index, ...grab, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, moving: false, target: -1, origin };
+  drag = { index, ...grab, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, moving: false, target: fromBoard ? Number(origin.dataset.index) : -1, origin, fromBoard };
   origin.addEventListener('pointermove', moveDrag);
   origin.addEventListener('pointerup', endDrag);
   origin.addEventListener('pointercancel', cancelDrag);
   origin.addEventListener('lostpointercapture', cancelDrag);
+  if (fromBoard) showPreview(drag.target);
 }
 function moveDrag(event) {
   if (!drag || event.pointerId !== drag.pointerId) return;
@@ -352,8 +359,11 @@ function cleanupDrag() {
 }
 function endDrag(event) {
   if (!drag || event.pointerId !== drag.pointerId) return;
-  const { moving, target, anchor } = drag;
-  if (moving) suppressPieceClickUntil = performance.now() + 150;
+  const { moving, target, anchor, fromBoard } = drag;
+  if (moving) {
+    suppressPieceClickUntil = performance.now() + 150;
+    if (fromBoard) suppressBoardClickUntil = performance.now() + 150;
+  }
   cleanupDrag();
   if (moving && target >= 0) placeAt(target, anchor);
   else if (moving) announce('블록을 놀이터 안으로 옮겨 놓아요.', false, true);
