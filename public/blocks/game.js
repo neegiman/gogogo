@@ -2,10 +2,11 @@ import { SIZE, COLORS, SHAPES, getPieceAnchor, resolvePlacement, hasPlace, newPi
 
 const $ = id => document.getElementById(id);
 const SAVE_KEY = 'mallang-blocks:v1';
+const CENTER_LAYOUT_VERSION = 2;
 const LINE_CLEAR_DURATION = 1100;
 let state = newGame(), best = 0, selected = -1, sound = false, audio, drag, previewIndex = -1;
 let resolvingMove = false;
-let centerLayout = false, unpinnedScrollY = 0;
+let centerLayout = true, unpinnedScrollY = 0;
 let viewportFrame = 0;
 let selectedAnchor = [0, 0];
 let history = [], feedbackTimer, celebrationTimer;
@@ -18,14 +19,15 @@ try {
     if (isValidState(saved.state)) state = saved.state;
     if (Number.isSafeInteger(saved.best) && saved.best >= 0) best = saved.best;
     sound = saved.sound === true;
-    centerLayout = saved.centerLayout === true;
+    // Older saves wrote false even when the player never changed this option.
+    if (saved.centerLayoutVersion === CENTER_LAYOUT_VERSION) centerLayout = saved.centerLayout !== false;
   }
 } catch { /* Ignore inaccessible or damaged saved data. */ }
 best = Math.max(best, state.score);
 
 function save() {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ version: 1, state, best, sound, centerLayout }));
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ version: 1, state, best, sound, centerLayout, centerLayoutVersion: CENTER_LAYOUT_VERSION }));
   } catch {
     if (!storageNoteShown) {
       storageNoteShown = true;
