@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8f7f0">
+  <meta name="description" content="쿵짝쿵짝, 토끼와 함께 박자에 맞춰 점프해요! 어린이를 위한 즐거운 리듬 연습 게임.">
+  <title>콩콩! 리듬 점프 · 작은 리듬 놀이터</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style-0cf2842d2d75.css">
+  <script src="./sound-b9d9b4be177f.js" defer></script>
+  <script src="./game-2ab5b1eeaa87.js" defer></script>
+</head>
+<body>
+  <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="icon-sound" viewBox="0 0 24 24"><path d="M11 4 6 8H3v8h3l5 4V4Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24"><path d="m12 2.5 3 6.1 6.7 1-4.9 4.7 1.2 6.7-6-3.2-6 3.2 1.2-6.7-4.9-4.7 6.7-1Z"/></symbol>
+    <symbol id="icon-note" viewBox="0 0 24 24"><path d="M9 17V5l11-2v12M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></symbol>
+    <symbol id="bunny-art" viewBox="0 0 140 170">
+      <ellipse cx="47" cy="42" rx="14" ry="36" transform="rotate(-13 47 42)" fill="#fffdf7" stroke="#e2ded0" stroke-width="2"/>
+      <ellipse cx="88" cy="38" rx="13" ry="36" transform="rotate(11 88 38)" fill="#fffdf7" stroke="#e2ded0" stroke-width="2"/>
+      <ellipse cx="47" cy="40" rx="6" ry="24" transform="rotate(-13 47 40)" fill="#f6b4a1"/>
+      <ellipse cx="88" cy="37" rx="5.5" ry="24" transform="rotate(11 88 37)" fill="#f6b4a1"/>
+      <circle cx="113" cy="125" r="14" fill="#fffdf7" stroke="#e2ded0" stroke-width="2"/>
+      <ellipse cx="71" cy="122" rx="35" ry="34" fill="#fffdf7" stroke="#e2ded0" stroke-width="2"/>
+      <ellipse cx="70" cy="117" rx="32" ry="20" fill="currentColor"/>
+      <path d="M40 114q30 19 60 0v23q-30 20-60 0Z" fill="currentColor"/>
+      <ellipse cx="50" cy="151" rx="19" ry="9" fill="#fffdf7" stroke="#e2ded0" stroke-width="2"/>
+      <ellipse cx="89" cy="151" rx="19" ry="9" fill="#fffdf7" stroke="#e2ded0" stroke-width="2"/>
+      <ellipse cx="69" cy="82" rx="44" ry="37" fill="#fffdf7" stroke="#e2ded0" stroke-width="2"/>
+      <ellipse cx="42" cy="91" rx="9" ry="5.5" fill="#f6bbac"/><ellipse cx="96" cy="91" rx="9" ry="5.5" fill="#f6bbac"/>
+      <ellipse cx="54" cy="80" rx="3.3" ry="4.5" fill="#344e47"/><ellipse cx="84" cy="80" rx="3.3" ry="4.5" fill="#344e47"/>
+      <path d="m65 89 4 4 4-4M69 93v4m0-1q-6 6-10 0m10 0q6 6 10 0" fill="none" stroke="#7b6458" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="34" cy="124" rx="9" ry="15" transform="rotate(-30 34 124)" fill="#fffdf7"/>
+      <ellipse cx="106" cy="123" rx="9" ry="15" transform="rotate(30 106 123)" fill="#fffdf7"/>
+      <path d="M61 130q8 7 16 0" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+    </symbol>
+  </svg>
+
+  <header class="site-header">
+    <a class="brand" href="../" aria-label="고고고 게임 메뉴로 돌아가기"><span class="brand-mark">♬</span><span>콩콩 놀이터<span class="brand-dot">.</span></span></a>
+    <div class="header-actions"><span class="header-caption">작은 점프, 자라는 리듬감</span><button id="sound" class="icon-button" aria-label="소리 끄기" aria-pressed="true"><svg><use href="#icon-sound"/></svg><span>소리 켜짐</span></button><button id="help" class="help-button" aria-label="놀이 방법 보기">?</button></div>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title"><div><div class="eyebrow"><span></span>우리 아이 첫 리듬 놀이</div><h1 id="page-title">콩콩! <span>리듬 점프</span><span class="title-spark">✧</span></h1><p>쿵짝쿵짝, 박자를 듣고 토끼와 함께 뛰어볼까요?</p></div><div class="intro-sticker"><svg><use href="#icon-note"/></svg><span>잘하지 않아도 괜찮아<br><strong>함께 즐기면 최고!</strong></span></div></section>
+
+    <div class="play-layout">
+      <section class="game-card" aria-label="리듬 점프 게임">
+        <div class="game-topbar"><div class="world-label"><span class="world-dot"></span>01 <span class="world-divider"></span> 햇살 가득 초원</div><div class="round-label"><svg><use href="#icon-star"/></svg><strong id="score">0</strong><span>개의 별</span></div></div>
+        <div class="scene" id="scene" tabindex="0" role="button" aria-label="게임 화면. 놀이 중 누르면 토끼가 점프해요.">
+          <svg class="landscape" viewBox="0 0 960 470" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#e8f4f0"/><stop offset="1" stop-color="#f7f8df"/></linearGradient><linearGradient id="earth" x2="0" y2="1"><stop stop-color="#d5e9bd"/><stop offset="1" stop-color="#bed7a8"/></linearGradient></defs>
+            <path fill="url(#sky)" d="M0 0h960v470H0z"/>
+            <g fill="#fff" opacity=".85"><path d="M46 91q-16-29 10-35 6-28 31-14 22-9 28 13 31 4 24 28Z"/><path d="M613 102q-13-22 10-29 7-27 30-18 24-8 28 17 31 0 26 24Z"/><path d="M824 180q-8-17 11-21 5-22 24-14 18-5 22 13 23 1 20 16Z"/></g>
+            <circle cx="800" cy="74" r="36" fill="#f8d87b"/><g stroke="#f8d87b" stroke-width="3" stroke-linecap="round"><path d="M800 22v-7m0 118v-7m-52-52h-7m118 0h-7m-89-37-5-5m83 83-5-5m0-73 5-5m-83 83 5-5"/></g><g fill="#b08a47"><circle cx="791" cy="75" r="2"/><circle cx="809" cy="75" r="2"/></g><path d="M796 85q4 4 8 0" fill="none" stroke="#b08a47" stroke-width="2" stroke-linecap="round"/>
+            <path d="M-90 312Q70 144 245 266T551 282Q728 128 1030 296v174H-90" fill="#d8e9cd"/>
+            <path d="M-100 354Q115 194 301 313T620 315Q789 223 1030 324v146H-100" fill="#c7dfb9"/>
+            <path d="M0 366Q195 310 424 357T960 345v125H0" fill="url(#earth)"/>
+            <path d="M-20 413q245-44 490-4t510-6v67H-20Z" fill="#e9e4c7"/>
+            <path d="M-20 418q245-44 490-4t510-6" stroke="#f5f0d8" stroke-width="10" fill="none"/>
+            <g fill="none" stroke="#87ad7e" stroke-width="3" stroke-linecap="round"><path d="m61 358-4-11m4 11 6-15m744 8 2-11m-2 11-6-7m82 44-3-12m3 12 6-9M345 318l-3-10m3 10 6-7m229 84-4-13m4 13 6-9"/></g>
+            <g fill="#fff9e7"><circle cx="117" cy="351" r="5"/><circle cx="122" cy="346" r="5"/><circle cx="128" cy="351" r="5"/><circle cx="123" cy="356" r="5"/><circle cx="727" cy="365" r="4"/><circle cx="732" cy="361" r="4"/><circle cx="737" cy="365" r="4"/><circle cx="732" cy="370" r="4"/></g><g fill="#ecc667"><circle cx="123" cy="351" r="3"/><circle cx="732" cy="365" r="3"/></g>
+            <g fill="#9ebc8e" opacity=".5"><ellipse cx="39" cy="447" rx="6" ry="2"/><ellipse cx="640" cy="437" rx="5" ry="2"/><ellipse cx="867" cy="455" rx="7" ry="2"/><ellipse cx="405" cy="444" rx="6" ry="2"/></g>
+          </svg>
+          <div class="scene-tag"><span>♬</span> 들리는 박자에 맞춰 콩!</div>
+          <div class="floating-note note-one" aria-hidden="true">♪</div><div class="floating-note note-two" aria-hidden="true">♫</div>
+          <div id="stones" aria-hidden="true"></div><div class="bunny-shadow" id="bunny-shadow" aria-hidden="true"></div>
+          <div class="bunny-wrap" id="bunny" aria-hidden="true"><svg><use href="#bunny-art"/></svg></div>
+          <div class="scene-feedback" id="feedback" aria-live="polite">준비됐나요?</div>
+          <div class="demo-guide" id="demo-guide" hidden><span class="demo-label" id="demo-progress">8박자 시범</span><strong class="countdown-number" id="demo-countdown" aria-hidden="true">♪</strong><span id="demo-heading">토끼를 보고 따라 해요</span><span class="demo-tip">쿵 소리에 맞춰 한 번씩 콩!</span></div>
+          <div class="scene-ready" id="ready"><span>귀 쫑긋, 준비 완료!</span><p>8박자 시범을 보고 함께 뛰어요</p></div>
+          <div id="particles" aria-hidden="true"></div>
+          <div class="beat-rail"><span class="beat-rail-label">하나, 둘, 셋, 넷</span><div class="beat-dots" id="beat-dots" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span></div><span id="combo">토끼와 함께 콩콩!</span></div>
+          <div class="progress-track"><div id="progress"></div></div>
+        </div>
+        <div class="game-controls"><div class="control-copy"><strong id="control-title">박자를 듣고, 콩!</strong><span id="control-hint"><kbd>Space</kbd> 키 또는 점프 버튼을 눌러요</span></div><div class="play-buttons"><button id="pause" class="pause-button" aria-label="잠깐 쉬기" hidden>Ⅱ</button><button id="action" class="primary-button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 10 7-10 7Z" fill="currentColor"/></svg><span>놀이 시작</span><span class="button-spark">✦</span></button></div></div>
+      </section>
+
+      <aside class="settings-card" aria-label="놀이 설정">
+        <div class="settings-heading"><span class="mini-icon">☷</span><h2>나만의 리듬으로</h2><button id="preview-sound" class="preview-sound" aria-label="효과음 미리 듣기. 소리가 꺼져 있으면 켜집니다." title="효과음 미리 듣기">♫ <span>미리 듣기</span></button></div>
+        <fieldset class="tempo-settings"><legend>어떤 박자로 뛰어볼까요?</legend><div class="tempo-options"><button class="tempo-option selected" data-tempo="72" aria-pressed="true"><span class="tempo-emoji">🌱</span><span><strong>사뿐사뿐</strong><small>천천히, 처음이라면</small></span><span class="tempo-bpm">72<span>BPM</span></span><span class="radio-dot"></span></button><button class="tempo-option" data-tempo="92" aria-pressed="false"><span class="tempo-emoji">🌼</span><span><strong>콩닥콩닥</strong><small>신나게, 익숙해지면</small></span><span class="tempo-bpm">92<span>BPM</span></span><span class="radio-dot"></span></button><button class="tempo-option" data-tempo="112" aria-pressed="false"><span class="tempo-emoji">🚀</span><span><strong>폴짝폴짝</strong><small>조금 빠르게, 도전!</small></span><span class="tempo-bpm">112<span>BPM</span></span><span class="radio-dot"></span></button></div></fieldset>
+        <fieldset class="friend-settings"><legend>오늘의 토끼 옷 색깔</legend><div class="friend-options"><button class="friend-option selected" data-color="mint" aria-label="민트 옷" aria-pressed="true"><svg><use href="#bunny-art"/></svg><span>민트</span></button><button class="friend-option" data-color="peach" aria-label="살구 옷" aria-pressed="false"><svg><use href="#bunny-art"/></svg><span>살구</span></button><button class="friend-option" data-color="lavender" aria-label="보라 옷" aria-pressed="false"><svg><use href="#bunny-art"/></svg><span>보라</span></button></div></fieldset>
+        <div class="goal-note"><svg><use href="#icon-star"/></svg><div><strong>오늘의 작은 도전</strong><p>24번의 박자를 함께 느껴봐요.<br>놓쳐도 괜찮아요. 다시 콩!</p></div><span class="note-tape"></span></div>
+      </aside>
+    </div>
+
+    <section class="howto" aria-label="놀이 방법"><div class="howto-heading"><span>HOW TO PLAY</span><h2>리듬과 친해지는 세 걸음</h2></div><div class="tip"><div class="tip-icon listen">♫</div><div><strong><span>01</span> 귀로 듣고</strong><p>쿵, 쿵! 박자 소리에 귀 기울여요.</p></div></div><div class="tip"><div class="tip-icon tap">↟</div><div><strong><span>02</span> 박자에 맞춰 콩!</strong><p>소리에 맞춰 버튼을 한 번씩 눌러요.</p></div></div><div class="tip"><div class="tip-icon smile">☺</div><div><strong><span>03</span> 즐기면 성공</strong><p>별을 모으며 나만의 리듬을 찾아요.</p></div></div></section>
+    <footer><span>MADE FOR LITTLE HAPPY FEET <span class="footer-flower">✿</span></span><p>서두르지 않아도 괜찮아요. 우리 아이의 속도로 함께해요.</p><span class="saved-best">최고 기록 <svg><use href="#icon-star"/></svg> <strong id="best">0</strong></span></footer>
+  </main>
+
+  <dialog id="help-dialog" class="modal"><button class="modal-close" aria-label="닫기" data-close="help-dialog">×</button><span class="modal-art">♫</span><h2>함께 콩콩 뛰어요!</h2><p>먼저 토끼가 8번의 박자에 맞춰 뛰는 모습을 봐요.<br>마지막 5박자는 큰 숫자로 알려줘요.<br>“이제 내 차례!”가 나오면 <strong>쿵 소리가 날 때마다</strong> 한 번씩 눌러요.</p><div class="help-keys"><kbd>Space</kbd><span>또는</span><span class="key-button">콩! 점프</span><span>또는 화면 터치</span></div><p>소리가 꺼져 있을 땐 1·2·3·4 표시를 봐요.<br>놓쳐도 끝나지 않아요. 다음 박자에 다시 도전!</p><button class="primary-button modal-primary" data-close="help-dialog">알겠어요!</button></dialog>
+  <dialog id="result-dialog" class="modal result-modal"><span class="result-eyebrow">오늘도 한 뼘, 리듬이 자랐어요</span><div class="result-stars" aria-hidden="true">✦ ★ ✦</div><h2 id="result-title">멋진 리듬 여행이었어요!</h2><p id="result-copy"></p><div class="result-stats"><div><strong id="result-score">0</strong><span>모은 별 / 24</span></div><div><strong id="result-streak">0</strong><span>최고 연속 점프</span></div></div><p class="result-encourage">한 번 더 뛰면 더 친해질 거예요. 콩콩!</p><button id="again" class="primary-button modal-primary">한 번 더 놀기 <span>↻</span></button><button id="back" class="text-button">설정으로 돌아가기</button></dialog>
+</body>
+</html>

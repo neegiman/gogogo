@@ -1,5 +1,9 @@
 # 고고고! 사진퍼즐
 
+상단 **점프** 메뉴에서 토끼와 함께 박자를 익히는 **콩콩! 리듬 점프**를 즐길 수 있습니다. `public/jump/`에 독립적인 정적 게임을 포함하므로 로그인 없이 열립니다. 선택한 속도로 8박자 시범을 보여주고, 마지막 5박자에 큰 숫자 5·4·3·2·1을 표시한 뒤 직접 플레이합니다. 글꼴과 소리도 사이트 안에서 제공하며, 게임 로고를 누르면 고고고 메뉴로 돌아갑니다.
+
+점프 게임을 갱신하려면 최신 게임의 `dist/` 폴더를 지정해 `node scripts/import-jump.mjs PATH_TO_DIST`를 실행한 뒤 빌드·배포합니다. 이 작업은 변경된 파일 이름에 내용 해시를 넣고 메뉴 링크의 버전도 갱신합니다. Jua 글꼴은 Google Fonts의 원본을 사용하며 라이선스는 `public/jump/OFL.txt`에 포함합니다.
+
 상단의 **말랑 블록** 메뉴에서 핑크 테마의 어린이 블록 퍼즐도 즐길 수 있습니다. 게임은 `public/blocks/`의 독립적인 정적 페이지이며 사진 업로드·로그인 없이 작동합니다. 블록을 놓고 가로·세로 줄을 완성하며, 모서리 기준 미리보기·되돌리기·진행 저장·꽃 보상을 제공합니다. 메뉴에서 게임으로 이동하면 사진 퍼즐의 진행 중 사진은 보관되지 않습니다.
 
 **찍고, 자르고, 붙이고. 고고고!** Camera/gallery → crop → puzzle. Phone layouts show six large pieces at a time with previous/next controls and advance when a tray is completed. Returned pieces fill the earliest empty tray slots, and the app opens their tray page. The editor keeps a large start button at the bottom of the phone screen, with difficulty chosen before starting. Touch controls are at least 44px where practical.
